@@ -5,14 +5,16 @@
 <h1 align="center">FocuBili · 焦点哔哩</h1>
 
 <p align="center">
-  一个强调主动搜索与专注观看的第三方 B 站 Android 客户端。
+  一个强调主动搜索与专注观看的第三方 B 站客户端（Android 为主；Windows / macOS 桌面实验性）。
 </p>
 
 <p align="center">
-  <a href="https://github.com/L1Xu4n/FocuBili/releases"><img src="https://img.shields.io/github/v/release/L1Xu4n/FocuBili?display_name=tag&sort=semver" alt="GitHub Release"></a>
-  <img src="https://img.shields.io/badge/version-v1.2.0-2EA44F" alt="Current version v1.2.0">
+  <a href="https://github.com/chocolatedesue/FocuBili/releases"><img src="https://img.shields.io/github/v/release/chocolatedesue/FocuBili?display_name=tag&sort=semver" alt="GitHub Release"></a>
+  <img src="https://img.shields.io/badge/version-v1.2.1-2EA44F" alt="Current version v1.2.1">
   <img src="https://img.shields.io/badge/Flutter-3.44.6-02569B?logo=flutter" alt="Flutter 3.44.6">
   <img src="https://img.shields.io/badge/Android-7.0+-3DDC84?logo=android" alt="Android 7.0+">
+  <img src="https://img.shields.io/badge/Windows-experimental-0078D6?logo=windows" alt="Windows experimental">
+  <img src="https://img.shields.io/badge/macOS-experimental-000000?logo=apple" alt="macOS experimental">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0"></a>
 </p>
 
@@ -28,6 +30,18 @@ FocuBili 希望保留“主动找到一支视频并认真看完”这件事本�
 - 播放页优先保留视频、选集、简介和必要控制；
 - 账号数据功能以只读为主，不伪装点赞、投币、收藏或关注写操作。
 
+## v1.2.1 更新内容
+
+- **多端发布**：提供 Android APK、Windows zip、macOS zip（实验性桌面；mac 包未公证）。最新构建见 [GitHub Release v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1)。
+- **桌面 media_kit 播放（实验性）**：Windows / macOS / Linux 默认使用 media_kit（libmpv），以便专注跟播计时；Android 仍以 Media3 为主。说明见 [`docs/PLAYBACK_BACKEND.md`](docs/PLAYBACK_BACKEND.md)。
+- **宽屏首页观看历史**：较宽布局下首页展示本机观看历史网格，便于桌面续看。
+- **历史续播**：从首页或观看记录进入时，尽量恢复上次分 P 与播放位置。
+- **专注计时与缓冲**：正常视频缓冲不再误暂停专注累计。
+- **桌面 Cookie 登录**：粘贴 Cookie 写入本机 prefs，与播放 / playurl 请求共用会话；Windows 以 Cookie 路径为主。
+- **播放器键盘快捷键**：桌面支持空格播放暂停、方向键进度/音量、全屏与弹幕等常用快捷键（输入框聚焦时不误触）。
+
+完整说明与产物 SHA-256 见 [v1.2.1 发布说明](docs/RELEASE_NOTES_v1.2.1.md) · [Release 下载页](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1)。
+
 ## v1.2.0 更新内容
 
 - 首页、搜索页和“我的”页增加统一的平板响应式边距与内容限宽；矮横屏和分屏中的首页欢迎区会按可用高度缩短。
@@ -36,7 +50,7 @@ FocuBili 希望保留“主动找到一支视频并认真看完”这件事本�
 - 修复“我的 → 设置 → 返回”后隐藏搜索框重新取得焦点、输入法自动弹出以及文字写入搜索框的问题。
 - 搜索页和“我的”页按系统返回时先回首页，只有首页继续把返回交给 Android 退出应用。
 
-正式 APK 请从 [GitHub Release v1.2.0](https://github.com/L1Xu4n/FocuBili/releases/tag/v1.2.0) 下载。完整变更见 [v1.2.0 发布说明](docs/RELEASE_NOTES_v1.2.0.md)。
+历史 APK 可见 [上游 L1Xu4n Release v1.2.0](https://github.com/L1Xu4n/FocuBili/releases/tag/v1.2.0)。完整变更见 [v1.2.0 发布说明](docs/RELEASE_NOTES_v1.2.0.md)。
 
 ## v1.1.1 更新内容
 
@@ -151,7 +165,7 @@ APK SHA-256：`4998C8EB9EF7F69C336F2A0BA50EF1772D6F154899506B4D2C10FFF5F91CFE95`
 
 - 首页提供专注目标、25/45/60 分钟快捷时长和 1～180 分钟自定义时长。
 - 支持开始、暂停、继续、提前结束和到时自动完成；切后台、锁屏或重启应用后恢复任务，并把无法确认仍在播放的时段记为打断。
-- 首页创建的专注会先等待用户关联视频；只有关联分P由原生播放器实际播放时才累计专注时间，视频暂停和后台时间不会继续消耗。
+- 首页创建的专注会先等待用户关联视频；只有关联分P由播放器实际播放时才累计专注时间，视频暂停和后台时间不会继续消耗；正常缓冲加载不再误停专注计时。
 - 专注目标、计划时长、实际时长、状态和最近记录只保存在当前设备。
 - 首页显示今日专注分钟、按时完成次数和最近五条记录，不设置排行榜或强制连续打卡。
 - 视频全屏左上角显示当前目标与剩余时间，并与本地时间、电量保持同一排；目标超过 12 个字符后限宽循环滚动。
@@ -163,7 +177,7 @@ APK SHA-256：`4998C8EB9EF7F69C336F2A0BA50EF1772D6F154899506B4D2C10FFF5F91CFE95`
 - 统计趋势使用自适应折线图；记录管理显示打断次数、打断原因和终止原因，并支持搜索、筛选、排序、单条删除和清空。
 - 统计页和统计分享图均显示自适应日期与完整时长坐标；分享图按范围自动抽样日期，避免 30 天数据挤在一起。
 - Android 提醒由系统闹钟管理，并在每次安排前检查通知与精确闹钟权限；小米系设备会额外引导后台自启动和无限制电量设置。
-- 设置页提供统一权限管理；设备重启、应用升级或重新取得精确闹钟权限后，会恢复仍待触发的提醒。
+- 设置页提供统一权限管理；设备重启、应用升级或重新取得精确闹钟权限后，会恢复仍待触发的提醒（主要为 Android）。
 
 ### 搜索与视频详情
 
@@ -172,7 +186,7 @@ APK SHA-256：`4998C8EB9EF7F69C336F2A0BA50EF1772D6F154899506B4D2C10FFF5F91CFE95`
 - 搜索结果显示标题、UP 主、发布时间、播放量、弹幕数、时长和多P提示。
 - 视频详情包含标题、简介、标签、公开统计、分P、UP 主入口和 UGC 合集。
 
-### 原生播放器
+### 原生与桌面播放器
 
 - 竖屏播放器按视频真实比例居中显示，默认不再用裁切方式放大竖屏视频。
 - 竖屏右上角提供画中画、弹幕和更多设置；字幕与画面比例设置均可直接使用。
@@ -181,8 +195,10 @@ APK SHA-256：`4998C8EB9EF7F69C336F2A0BA50EF1772D6F154899506B4D2C10FFF5F91CFE95`
 - **桌面（Windows / Linux / macOS）默认使用 media_kit（libmpv）实验性播放**（见 [`docs/PLAYBACK_BACKEND.md`](docs/PLAYBACK_BACKEND.md)），以便专注跟播计时。
 - 支持播放/暂停、进度拖动、双击快进/快退、长按临时三倍速、清晰度与倍速切换。
 - 支持横向滑动进度预览、竖向亮度/音量调节、沉浸全屏、画面比例、字幕、弹幕和画中画（部分能力仍以 Android 为主）。
+- 桌面播放页支持常用键盘快捷键（空格、方向键、全屏、静音、弹幕等）。
 - 支持 MediaSession、耳机和系统媒体按钮（主要为 Android）。
-- 支持播放进度、最后分P、本机观看记录和有限容量的边播边缓存。
+- 支持播放进度、最后分P、本机观看记录和有限容量的边播边缓存（缓存路径以 Android 更完整）。
+- 本机观看记录可从首页宽屏网格或「我的」进入，并尽量恢复分P与进度。
 - 支持按视频时间点创建本机笔记、保存当前画面，并在竖屏、全屏和“我的”页面继续管理。
 - 网络波动时会尝试重试、备用 CDN 和有限次数播放数据刷新（Android Media3 路径更完整）。
 
@@ -200,15 +216,18 @@ APK SHA-256：`4998C8EB9EF7F69C336F2A0BA50EF1772D6F154899506B4D2C10FFF5F91CFE95`
 - 项目依赖非官方公开接口，接口可能随平台策略调整而失效或触发风控。
 - 充电专属、会员、课程、番剧、私密或其他受访问控制保护的内容不会被绕过。
 - 桌面 media_kit 播放为**实验性**：依赖 libmpv / `media_kit_libs_video`；DASH 双轨等仍在演进。
+- macOS 构建为未签名 / **未公证** zip，不提供 App Store 分发。
 - 弹幕屏蔽词、透明度、字号、轨道记忆和解码策略仍待完善。
 - 时间点笔记目前只保存在当前设备，已支持手动导出和系统分享，但尚未提供自动同步或云备份。
 - 不同 Android 厂商的全屏安全区、画中画和后台恢复仍需要更多真机验证。
-- Android 提醒已支持重启恢复和厂商后台保护引导，但不同品牌的自启动、电量限制和待机调度仍需在更多真机持续验收。
-- Release APK 目前使用本机现有签名配置，仅适合学习测试；正式长期分发前应配置并妥善保存独立签名密钥。
+- Android 提醒已支持重启恢复和厂商后台保护引导，但不同品牌的自启动、电量限制和待机调度仍需在更多真机持续验收；桌面无对等系统闹钟 / 勿扰。
+- Release 产物目前多为学习测试签名配置，仅适合试装；正式长期分发前应配置并妥善保存独立签名密钥。
 
 ## 下载
 
-可以在 [GitHub Releases](https://github.com/L1Xu4n/FocuBili/releases) 下载公开构建。
+最新多端构建请从 **[chocolatedesue/FocuBili Releases](https://github.com/chocolatedesue/FocuBili/releases)** 获取，推荐标签 **[v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1)**（Android APK / Windows zip / macOS zip）。校验和见 [docs/RELEASE_NOTES_v1.2.1.md](docs/RELEASE_NOTES_v1.2.1.md)。
+
+较早 Android 版本仍可能出现在 [L1Xu4n/FocuBili Releases](https://github.com/L1Xu4n/FocuBili/releases)（上游 / 历史存档，非最新下载源）。
 
 ## 本地构建
 
@@ -225,7 +244,7 @@ Android 构建链固定为 Gradle 8.14.3、Android Gradle Plugin 8.11.1 和 Kotl
 专注计时的视频关联、打断和通知规则已经内置在应用流程中，并会继续通过自动化测试回归。
 
 ```bash
-git clone https://github.com/L1Xu4n/FocuBili.git
+git clone https://github.com/chocolatedesue/FocuBili.git
 cd FocuBili
 flutter pub get
 dart analyze
@@ -239,6 +258,8 @@ Release APK 默认生成在：
 build/app/outputs/flutter-apk/app-release.apk
 ```
 
+Windows / macOS 桌面可参考 Flutter 官方桌面构建命令（需本机启用对应 desktop platform）；产物形态与云编译 zip 一致时便于对照 Release 资产。
+
 Windows 用户建议把仓库放在不含中文和空格的目录。若必须使用中文目录，可以先映射英文盘符再构建：
 
 ```powershell
@@ -247,15 +268,17 @@ Set-Location X:\
 flutter build apk --release
 ```
 
-### 云编译（Codemagic）
+### 云编译（Codemagic · GitHub Actions）
 
-仓库根目录提供 [`codemagic.yaml`](codemagic.yaml)，支持：
+仓库根目录提供 [`codemagic.yaml`](codemagic.yaml)，并与 GitHub Actions 互补：
 
-| Workflow | 产物 |
-|----------|------|
-| `android-apk` | Release APK |
-| `macos-build` | macOS `.app` zip（未签名） |
-| `windows-build` | Windows Release 目录 zip |
+| 来源 | Workflow / 说明 | 产物 |
+|------|-----------------|------|
+| Codemagic | `android-apk` | Release APK |
+| Codemagic | `macos-build` | macOS `.app` zip（未签名 / 未公证） |
+| Codemagic | `windows-build` | Windows Release 目录 zip（需可用 Windows 实例） |
+| GitHub Actions | Windows 桌面构建 | Windows zip（见仓库 Actions / Release 资产） |
+| GitHub Release | [v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1) | 已打包 APK + Win/mac zip 与校验说明 |
 
 接入步骤、可选 Android 签名与桌面能力说明见 [docs/CODEMAGIC.md](docs/CODEMAGIC.md)。
 
@@ -276,7 +299,7 @@ android/app/src/main/kotlin/com/focubili/app/
 └─ BilibiliCookieController.kt   # WebView Cookie 会话桥
 ```
 
-播放器已经按 Flutter 页面、控制栏、弹幕、合集和 Android Media3 轨道策略拆分。首次安装时展示的完整声明见 [用户须知与使用协议](docs/USER_AGREEMENT.md)。
+播放器已经按 Flutter 页面、控制栏、弹幕、合集和 Android Media3 / 桌面 media_kit 轨道策略拆分。首次安装时展示的完整声明见 [用户须知与使用协议](docs/USER_AGREEMENT.md)。
 
 ## 隐私与安全
 
@@ -285,8 +308,8 @@ android/app/src/main/kotlin/com/focubili/app/
 - 不把 Cookie、播放记录或搜索记录上传到开发者服务器。
 - 只有投稿风控请求会把现有 B 站 Cookie 临时发送回 `api.bilibili.com`；Cookie 不写日志、不写文件，也不会发送给第三方域名。
 - 播放进度、最后分P、搜索记录、本机观看记录和时间点笔记均保存在本机。
-- 笔记中可选的视频画面写入 Android 应用私有目录，卸载应用时会随应用数据一并删除。
-- 视频缓存位于 Android 缓存目录，可由用户或系统清理。
+- 笔记中可选的视频画面写入应用私有目录，卸载应用时会随应用数据一并删除。
+- 视频缓存位于应用缓存目录，可由用户或系统清理（Android 路径更完整）。
 - WBI 签名只用于读取公开接口，不用于绕过访问控制。
 
 ## 致谢
