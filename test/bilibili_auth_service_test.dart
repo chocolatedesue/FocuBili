@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focubili/services/bilibili_auth_service.dart';
+import 'package:focubili/services/cookie_header_provider.dart';
 
 /// 用于测试的 Cookie 容器，会记录读取、替换和仅清理 B 站 Cookie 的调用。
 class _RecordingCookieStore implements BilibiliCookieStore {
@@ -190,5 +192,25 @@ void main() {
     expect(store.replaceCalls, 0);
     expect(store.clearCalls, 0);
     expect(store.cookies, 'SESSDATA=old-account');
+  });
+
+  /// 桌面默认 store 写入后，播放侧 prefs provider 能读到同一 Cookie。
+  test('默认 Cookie 容器在桌面与 PrefsCookieHeaderProvider 共享键', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final BilibiliCookieStore defaultStore = createDefaultBilibiliCookieStore();
+    if (defaultStore is! PrefsBilibiliCookieStore) {
+      // Android 宿主下默认是 Platform 通道，不测 prefs 互通。
+      return;
+    }
+
+    final BilibiliAuthService service = BilibiliAuthService(
+      api: _CallbackAuthApi((String _) async => _activeResponse()),
+    );
+    await service.loginWithCookie('SESSDATA=desktop-auth-session');
+
+    const PrefsCookieHeaderProvider playback =
+        PrefsCookieHeaderProvider();
+    expect(await playback.readCookieHeader(), 'SESSDATA=desktop-auth-session');
+    expect(defaultStore.prefsKey, kFocubiliBiliCookieHeaderPrefsKey);
   });
 }

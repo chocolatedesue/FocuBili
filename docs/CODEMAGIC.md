@@ -65,14 +65,22 @@ base64 -w0 android/release.keystore   # 贴到 KEYSTORE_BASE64
 
 ## 桌面端能力说明（重要）
 
-FocuBili 核心播放链路依赖 Android 原生 **Media3 + MethodChannel**（`NativePlaybackController` 等）。  
-当前仓库通过 `flutter create --platforms=windows,macos` 补齐了桌面工程脚手架，**Codemagic 可以完成编译并产出可运行壳**，但：
+播放后端选择见 [`PLAYBACK_BACKEND.md`](PLAYBACK_BACKEND.md)：
 
-- 视频纹理 / 边播边缓存 / 系统闹钟提醒等 **Android 专用能力在桌面端尚未移植**；
-- 登录页使用的 `webview_flutter` 官方支持 Android / iOS / **macOS**，**不支持 Windows**（Windows 上官方 WebView 登录可能不可用，可用 Cookie 等方式）；
-- macOS 已开启 sandbox 下的 `network.client`，便于 HTTPS 请求。
+| 平台 | 播放 | 说明 |
+|------|------|------|
+| **Android** | Media3 + MethodChannel（主路径） | 纹理、边播边缓存、系统闹钟等能力最完整 |
+| **Windows / Linux / macOS** | **media_kit（libmpv）实验性** | 桌面默认后端；依赖 `media_kit_libs_video` / 系统 mpv |
+| 登录 Cookie | 桌面 prefs 与播放共用；Android WebView 通道 | 部分流仍需有效 Cookie；Windows 官方 WebView 登录受限 |
 
-把「能编过、能下发」当作第一阶段；完整桌面播放需后续单独做桌面播放后端。
+补充：
+
+- 边播边缓存、系统闹钟提醒等 **Android 专用能力在桌面端尚未移植**；
+- 登录页 `webview_flutter` 官方支持 Android / iOS / **macOS**，**不支持 Windows**（桌面优先 Cookie 粘贴）；
+- macOS 已开启 sandbox 下的 `network.client`，便于 HTTPS 请求；
+- **Windows 构建**：Codemagic `windows-build`（需 `windows_x2` 付费实例）之外，也可在 **GitHub Actions** 等自备 Windows runner 上 `flutter build windows`。
+
+桌面播放为实验性能力，接口与编解码行为仍可能变化；请以真机/本机验收为准。
 
 ## 通过 CLI 触发构建
 
@@ -130,5 +138,5 @@ flutter build windows --release
 |------|-----|----------|
 | Codemagic | 仅 macOS | Android + macOS + Windows |
 | 代码生成 | Isar / slang | 无（不需要 build_runner） |
-| 主平台 | 跨端音乐 | Android 视频为主，桌面为编译脚手架 |
+| 主平台 | 跨端音乐 | Android Media3 为主；桌面 media_kit 实验性播放 |
 | 签名 | GitHub Release secrets | Codemagic 可选 keystore |

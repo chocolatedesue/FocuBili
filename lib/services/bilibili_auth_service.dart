@@ -2,7 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/services.dart';
+
+import 'cookie_header_provider.dart';
 
 /// 保存 B 站登录成功后“我的”页面需要展示的最小账号信息。
 class BilibiliAccount {
@@ -141,6 +144,49 @@ class PlatformBilibiliCookieStore implements BilibiliCookieStore {
   }
 }
 
+/// 用 [SharedPreferences] 持久化 Cookie，键与播放侧 [PrefsCookieHeaderProvider] 相同。
+///
+/// 桌面粘贴登录后，会话 API 与 media_kit 播放共用
+/// [kFocubiliBiliCookieHeaderPrefsKey]，避免 MethodChannel 在非 Android 上
+/// MissingPlugin 导致“登录成功但播放无 Cookie”。
+class PrefsBilibiliCookieStore implements BilibiliCookieStore {
+  /// 创建委托同一 prefs 键的 Cookie 存储；默认与播放 Cookie 头提供方一致。
+  const PrefsBilibiliCookieStore({
+    this.prefsKey = kFocubiliBiliCookieHeaderPrefsKey,
+  });
+
+  /// 存储 Cookie 头的 prefs 键（须与 [PrefsCookieHeaderProvider] 一致）。
+  final String prefsKey;
+
+  PrefsCookieHeaderProvider get _provider =>
+      PrefsCookieHeaderProvider(prefsKey: prefsKey);
+
+  @override
+  Future<String> readCookies() => _provider.readCookieHeader();
+
+  @override
+  Future<void> replaceCookies(String cookieHeader) =>
+      _provider.replaceCookies(cookieHeader);
+
+  @override
+  Future<void> clearBilibiliCookies() => _provider.clear();
+}
+
+/// 按平台选择默认 [BilibiliCookieStore]。
+///
+/// | 平台 | 实现 |
+/// |------|------|
+/// | Android | [PlatformBilibiliCookieStore]（WebView 通道） |
+/// | Windows / macOS / Linux | [PrefsBilibiliCookieStore]（与播放同键） |
+/// | 其他 / Web | [PrefsBilibiliCookieStore] |
+@visibleForTesting
+BilibiliCookieStore createDefaultBilibiliCookieStore() {
+  if (!kIsWeb && Platform.isAndroid) {
+    return const PlatformBilibiliCookieStore();
+  }
+  return const PrefsBilibiliCookieStore();
+}
+
 /// 使用 Dart HttpClient 请求官方账号状态接口的默认网络实现。
 class BilibiliHttpAuthApi implements BilibiliAuthApi {
   /// 创建使用官方账号状态地址的网络客户端。
@@ -184,9 +230,12 @@ class BilibiliHttpAuthApi implements BilibiliAuthApi {
 
 /// 验证 B 站会话、导入已验证 Cookie，并且永不保存多账号或密码资料。
 class BilibiliAuthService {
-  /// 创建可替换网络和 Cookie 容器的登录服务，默认使用 Android 与真实官方接口。
+  /// 创建可替换网络和 Cookie 容器的登录服务。
+  ///
+  /// 未注入 [cookieStore] 时：Android 用 WebView 通道，桌面与其它平台用
+  /// prefs（与 [createCookieHeaderProvider] 同键），保证粘贴登录可驱动播放。
   BilibiliAuthService({BilibiliCookieStore? cookieStore, BilibiliAuthApi? api})
-    : _cookieStore = cookieStore ?? const PlatformBilibiliCookieStore(),
+    : _cookieStore = cookieStore ?? createDefaultBilibiliCookieStore(),
       _api = api ?? BilibiliHttpAuthApi();
 
   final BilibiliCookieStore _cookieStore;

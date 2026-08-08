@@ -1,6 +1,6 @@
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,10 +8,9 @@ import 'playback_contracts.dart';
 
 /// SharedPreferences 键：完整 Cookie 请求头值（不含 `Cookie:` 前缀）。
 ///
-/// 供桌面粘贴登录与 [PrefsCookieHeaderProvider] 读写；勿写入日志。
-@visibleForTesting
+/// 供桌面粘贴登录（[PrefsBilibiliCookieStore]）、[PrefsCookieHeaderProvider]
+/// 与播放会话共用；勿写入日志。
 const String kFocubiliBiliCookieHeaderPrefsKey = 'focubili_bili_cookie_header';
-
 /// Android WebView Cookie 所在 MethodChannel（与 [BilibiliCookieController] 一致）。
 const String _kAuthChannelName = 'com.focubili.app/auth';
 
