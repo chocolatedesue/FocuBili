@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-import '../../core/router/app_router.dart';
 import '../../models/video_preview.dart';
 import '../../models/watch_history_entry.dart';
 import '../../services/bilibili_service.dart';
 import '../../services/watch_history_service.dart';
 import '../common/watch_history_format.dart';
+import '../common/watch_history_launcher.dart';
 
 /// 展示只保存在当前设备上的观看记录，不读取或同步 B 站账号历史。
 class WatchHistoryPage extends StatefulWidget {
@@ -221,29 +221,21 @@ class _WatchHistoryPageState extends State<WatchHistoryPage> {
     }
   }
 
-  /// 查询被点击记录对应的视频详情，成功后进入播放器，失败时保留该记录。
+  /// 查询被点击记录对应的视频详情，成功后按上次分P与进度进入播放器。
   Future<void> _openEntry(WatchHistoryEntry entry) async {
     if (_openingBvid != null) {
       return;
     }
     setState(() => _openingBvid = entry.bvid);
-    try {
-      final VideoPreview video = await _bilibiliService.lookupVideo(entry.bvid);
-      if (!mounted) {
-        return;
-      }
-      setState(() => _openingBvid = null);
-      Navigator.of(context).pushNamed(AppRoutes.player, arguments: video);
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() => _openingBvid = null);
-      final String message = error is BilibiliLookupException
-          ? error.message
-          : '无法打开该视频，请稍后重试。';
-      _showMessage(message);
+    await WatchHistoryLauncher.open(
+      context,
+      entry,
+      service: _bilibiliService,
+    );
+    if (!mounted) {
+      return;
     }
+    setState(() => _openingBvid = null);
   }
 
   /// 显示统一持续三秒的轻量提示，不改变已有本机记录内容。

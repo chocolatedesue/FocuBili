@@ -72,7 +72,7 @@ enum _PlayerMoreMenuAction {
 enum _CollectionEntryOrder { original, newest, oldest, mostPlayed }
 
 /// 标识播放器首次跳转来自笔记还是专注记录，以显示准确提示文案。
-enum PlayerInitialPositionSource { note, focus, learning }
+enum PlayerInitialPositionSource { note, focus, learning, history }
 
 /// 新架构的原生播放器页面，提供简洁的 App 风格控制层。
 class PlayerPage extends StatefulWidget {
@@ -1509,6 +1509,7 @@ class _PlayerPageState extends State<PlayerPage>
       PlayerInitialPositionSource.note => '笔记位置',
       PlayerInitialPositionSource.focus => '专注位置',
       PlayerInitialPositionSource.learning => '学习清单位置',
+      PlayerInitialPositionSource.history => '观看记录位置',
     };
     try {
       await _seekNativeTo(position);
