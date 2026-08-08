@@ -72,7 +72,21 @@ enum _PlayerMoreMenuAction {
 enum _CollectionEntryOrder { original, newest, oldest, mostPlayed }
 
 /// 标识播放器首次跳转来自笔记还是专注记录，以显示准确提示文案。
-enum PlayerInitialPositionSource { note, focus, learning }
+enum PlayerInitialPositionSource { note, focus, learning, history }
+
+/// 判断当前播放快照是否应计为「正在播放」以驱动专注计时。
+///
+/// 正常 rebuffer 时 media_kit 会把 [PlaybackPhase] 短暂切到 [PlaybackPhase.loading]
+/// 且 [PlaybackSnapshot.isPlaying] 仍可能为 true；此时不应暂停专注。
+/// 暂停、完播、错误、以及未在播放的 idle/loading 仍视为未播放。
+@visibleForTesting
+bool isFocusPlaybackActuallyPlaying(PlaybackSnapshot snapshot) {
+  if (!snapshot.isPlaying) {
+    return false;
+  }
+  return snapshot.phase == PlaybackPhase.ready ||
+      snapshot.phase == PlaybackPhase.loading;
+}
 
 /// 新架构的原生播放器页面，提供简洁的 App 风格控制层。
 class PlayerPage extends StatefulWidget {
@@ -1365,8 +1379,7 @@ class _PlayerPageState extends State<PlayerPage>
         ),
       );
     }
-    final bool actuallyPlaying =
-        snapshot.isPlaying && snapshot.phase == PlaybackPhase.ready;
+    final bool actuallyPlaying = isFocusPlaybackActuallyPlaying(snapshot);
     if (_focusSeekTransitionActive &&
         _lastFocusPlaybackPlaying == true &&
         !actuallyPlaying &&
@@ -1509,6 +1522,7 @@ class _PlayerPageState extends State<PlayerPage>
       PlayerInitialPositionSource.note => '笔记位置',
       PlayerInitialPositionSource.focus => '专注位置',
       PlayerInitialPositionSource.learning => '学习清单位置',
+      PlayerInitialPositionSource.history => '观看记录位置',
     };
     try {
       await _seekNativeTo(position);
