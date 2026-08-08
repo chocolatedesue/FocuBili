@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:media_kit/media_kit.dart';
 
 import 'app.dart';
 import 'core/theme/app_theme.dart';
@@ -31,6 +32,8 @@ void _installProblemDiagnostics() {
 /// 初始化 Flutter 绑定、系统栏样式，并启动焦点哔哩应用。
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // media_kit 要求在创建 Player 前完成原生库绑定；测试入口不调用 main()，故不影响 flutter test。
+  MediaKit.ensureInitialized();
   _installProblemDiagnostics();
   // 应用若在播放器全屏期间被系统结束，重新启动时先恢复首页使用的竖屏方向。
   await SystemChrome.setPreferredOrientations(<DeviceOrientation>[

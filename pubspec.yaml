@@ -50,6 +50,11 @@ dependencies:
   shared_preferences: ^2.5.5
   url_launcher: ^6.3.2
   webview_flutter: ^4.14.1
+  # media_kit 跨平台播放（Wave 0 引入；W2 实现 MediaKitPlaybackService，W3 桌面默认切换）。
+  # 版本与 pub.dev 稳定线对齐，已在 Flutter 3.44 / Dart 3.12 下解析。
+  media_kit: ^1.2.6
+  media_kit_video: ^2.0.1
+  media_kit_libs_video: ^1.0.7
 
 
 dev_dependencies:
