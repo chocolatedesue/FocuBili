@@ -893,7 +893,8 @@ void main() {
     expect(find.text('我的'), findsOneWidget);
   });
 
-  /// 验证登录页提供手机号、密码与 Cookie 入口；桌面默认 Cookie，可切到官方手机号。
+  /// 验证登录页提供手机号、密码与 Cookie 入口；桌面默认 Cookie。
+  /// Windows 上官方 WebView 不可用，手机号分栏会引导回 Cookie 粘贴。
   testWidgets('登录页提供手机号密码和Cookie入口', (WidgetTester tester) async {
     await tester.pumpWidget(const MaterialApp(home: LoginPage()));
     await tester.pumpAndSettle();
@@ -902,14 +903,24 @@ void main() {
     expect(find.text('Cookie'), findsOneWidget);
     expect(find.text('手机号'), findsOneWidget);
 
-    // 桌面（含 Linux 测试 VM）默认 Cookie；手机端默认官方手机号。
+    // 桌面（含 Linux/Windows CI）默认 Cookie；Android 模拟器默认官方手机号。
     final bool cookieDefault = find.text('使用 Cookie 登录').evaluate().isNotEmpty;
     if (cookieDefault) {
       expect(find.textContaining('SESSDATA'), findsWidgets);
       await tester.tap(find.text('手机号'));
       await tester.pumpAndSettle();
     }
-    expect(find.text('进入官方手机号登录'), findsOneWidget);
+
+    final bool hasOfficialPhone = find
+        .text('进入官方手机号登录')
+        .evaluate()
+        .isNotEmpty;
+    final bool hasWindowsCookieGuide = find
+        .text('改用 Cookie 登录')
+        .evaluate()
+        .isNotEmpty;
+    // 非 Windows：官方手机号入口；Windows：引导 Cookie。
+    expect(hasOfficialPhone || hasWindowsCookieGuide, isTrue);
 
     await tester.tap(find.text('Cookie'));
     await tester.pumpAndSettle();
