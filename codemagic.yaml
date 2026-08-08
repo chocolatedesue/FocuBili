@@ -1,12 +1,13 @@
 # FocuBili Codemagic cloud builds
 #
 # Workflows:
-#   - android-apk   (mac_mini_m2, free-plan friendly) → release APK
+#   - android-apk   (mac_mini_m2, free-plan friendly) → per-ABI release APKs
+#                     (armeabi-v7a, arm64-v8a, x86_64; no fat app-release.apk)
 #   - macos-build   (mac_mini_m2, free-plan friendly) → unsigned .app zip
 #   - windows-build (windows_x2, often paid / may be unavailable on free) → Release zip
 #
 # Multi-backend playback (not compile-only shells):
-#   - Android: Media3 + MethodChannel (primary mobile)
+#   - Android: media_kit / libmpv (default); Native Media3 optional fallback
 #   - Desktop Win/Linux/macOS: media_kit / libmpv (experimental real playback)
 # See docs/PLAYBACK_BACKEND.md and docs/DESKTOP.md.
 #
@@ -63,24 +64,37 @@ workflows:
           else
             echo "No keystore secrets; release APK will use debug signing."
           fi
-      - name: Build Android release APK
+      - name: Build Android release APKs (split-per-abi)
         script: |
-          flutter build apk --release \
-            --build-name=1.2.${PROJECT_BUILD_NUMBER} \
-            --build-number=${PROJECT_BUILD_NUMBER}
-      - name: Rename APK artifact
+          set -euo pipefail
+          BUILD_NAME="${BUILD_NAME:-1.2.${PROJECT_BUILD_NUMBER}}"
+          flutter build apk --release --split-per-abi \
+            --build-name="$BUILD_NAME" \
+            --build-number="$PROJECT_BUILD_NUMBER"
+      - name: Package per-ABI APK artifacts
         script: |
           set -euo pipefail
           mkdir -p codemagic-artifacts
-          SRC="build/app/outputs/flutter-apk/app-release.apk"
-          DEST="codemagic-artifacts/FocuBili-android-b${PROJECT_BUILD_NUMBER}.apk"
-          cp "$SRC" "$DEST"
-          cp "$SRC" "codemagic-artifacts/FocuBili-android-latest.apk"
-          sha256sum "$DEST" | tee "codemagic-artifacts/FocuBili-android-b${PROJECT_BUILD_NUMBER}.sha256"
+          OUT="build/app/outputs/flutter-apk"
+          # Publish only split APKs — do not promote fat app-release.apk.
+          for abi in armeabi-v7a arm64-v8a x86_64; do
+            SRC="${OUT}/app-${abi}-release.apk"
+            if [ ! -f "$SRC" ]; then
+              echo "Missing split APK: $SRC"
+              ls -la "${OUT}" || true
+              exit 1
+            fi
+            DEST="codemagic-artifacts/FocuBili-android-${abi}-b${PROJECT_BUILD_NUMBER}.apk"
+            LATEST="codemagic-artifacts/FocuBili-android-${abi}-latest.apk"
+            cp "$SRC" "$DEST"
+            cp "$SRC" "$LATEST"
+            sha256sum "$DEST" | tee "codemagic-artifacts/FocuBili-android-${abi}-b${PROJECT_BUILD_NUMBER}.sha256"
+            sha256sum "$LATEST" | tee "codemagic-artifacts/FocuBili-android-${abi}-latest.sha256"
+          done
+          ls -la codemagic-artifacts/
     artifacts:
-      - codemagic-artifacts/*.apk
-      - codemagic-artifacts/*.sha256
-      - build/app/outputs/flutter-apk/*.apk
+      - codemagic-artifacts/FocuBili-android-*.apk
+      - codemagic-artifacts/FocuBili-android-*.sha256
     publishing:
       email:
         recipients:
