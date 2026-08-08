@@ -893,19 +893,28 @@ void main() {
     expect(find.text('我的'), findsOneWidget);
   });
 
-  /// 验证登录页默认选择手机号，并允许切换到不会明文展示内容的 Cookie 表单。
+  /// 验证登录页提供手机号、密码与 Cookie 入口；桌面默认 Cookie，可切到官方手机号。
   testWidgets('登录页提供手机号密码和Cookie入口', (WidgetTester tester) async {
     await tester.pumpWidget(const MaterialApp(home: LoginPage()));
     await tester.pumpAndSettle();
 
-    expect(find.text('进入官方手机号登录'), findsOneWidget);
     expect(find.text('密码'), findsOneWidget);
     expect(find.text('Cookie'), findsOneWidget);
+    expect(find.text('手机号'), findsOneWidget);
+
+    // 桌面（含 Linux 测试 VM）默认 Cookie；手机端默认官方手机号。
+    final bool cookieDefault = find.text('使用 Cookie 登录').evaluate().isNotEmpty;
+    if (cookieDefault) {
+      expect(find.textContaining('SESSDATA'), findsWidgets);
+      await tester.tap(find.text('手机号'));
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('进入官方手机号登录'), findsOneWidget);
 
     await tester.tap(find.text('Cookie'));
     await tester.pumpAndSettle();
     expect(find.text('使用 Cookie 登录'), findsOneWidget);
-    expect(find.text('需要包含 SESSDATA'), findsOneWidget);
+    expect(find.textContaining('SESSDATA'), findsWidgets);
   });
 
   /// 验证播放器只在真实就绪后写一次历史，并在切换分P后的下一次就绪更新同一视频。

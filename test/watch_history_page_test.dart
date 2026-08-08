@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:focubili/core/router/app_router.dart';
+import 'package:focubili/core/router/player_route_args.dart';
+import 'package:focubili/features/player/player_page.dart';
 import 'package:focubili/features/profile/watch_history_page.dart';
 import 'package:focubili/models/video_preview.dart';
 import 'package:focubili/models/watch_history_entry.dart';
@@ -324,7 +326,11 @@ void main() {
 
     expect(bilibiliService.lookupRequests, <String>[entry.bvid]);
     expect(observer.pushedRoutes.last.settings.name, AppRoutes.player);
-    expect(observer.pushedRoutes.last.settings.arguments, same(preview));
+    final Object? args = observer.pushedRoutes.last.settings.arguments;
+    expect(args, isA<PlayerRouteArgs>());
+    final PlayerRouteArgs routeArgs = args! as PlayerRouteArgs;
+    expect(routeArgs.video, same(preview));
+    expect(routeArgs.initialPositionSource, PlayerInitialPositionSource.history);
   });
 
   /// 验证查询失败时不删除记录，并显示持续三秒的错误提示。

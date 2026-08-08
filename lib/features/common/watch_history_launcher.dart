@@ -23,7 +23,12 @@ abstract final class WatchHistoryLauncher {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('这条观看记录没有有效的视频编号')));
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('这条观看记录没有有效的视频编号'),
+              duration: Duration(seconds: 3),
+            ),
+          );
       }
       return false;
     }
@@ -47,7 +52,9 @@ abstract final class WatchHistoryLauncher {
           : '无法打开该视频，请稍后重试。';
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(message)));
+        ..showSnackBar(
+          SnackBar(content: Text(message), duration: const Duration(seconds: 3)),
+        );
       return false;
     }
   }

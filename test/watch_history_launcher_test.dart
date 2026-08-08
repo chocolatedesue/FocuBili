@@ -56,18 +56,14 @@ VideoPreview _multiPartVideo() {
 }
 
 class _FakeBilibiliService implements BilibiliService {
-  _FakeBilibiliService(this.video, {this.throwOnLookup = false});
+  _FakeBilibiliService(this.video);
 
   final VideoPreview video;
-  final bool throwOnLookup;
   int lookupCount = 0;
 
   @override
   Future<VideoPreview> lookupVideo(String input) async {
     lookupCount += 1;
-    if (throwOnLookup) {
-      throw const BilibiliLookupException('lookup failed');
-    }
     return video;
   }
 
