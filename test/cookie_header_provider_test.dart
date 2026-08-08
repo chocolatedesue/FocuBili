@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:focubili/services/bilibili_auth_service.dart';
 import 'package:focubili/services/cookie_header_provider.dart';
 import 'package:focubili/services/playback_contracts.dart';
 
@@ -148,4 +149,67 @@ void main() {
       );
     });
   });
+
+  group('PrefsBilibiliCookieStore', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+    });
+
+    test('默认键与 PrefsCookieHeaderProvider 相同且互通', () async {
+      const PrefsBilibiliCookieStore store = PrefsBilibiliCookieStore();
+      const PrefsCookieHeaderProvider provider = PrefsCookieHeaderProvider();
+      const String cookie = 'SESSDATA=shared_desktop; DedeUserID=9';
+
+      expect(store.prefsKey, kFocubiliBiliCookieHeaderPrefsKey);
+      expect(provider.prefsKey, kFocuBiliSameKeyAsStore(store));
+
+      await store.replaceCookies(cookie);
+      expect(await provider.readCookieHeader(), cookie);
+      expect(await store.readCookies(), cookie);
+
+      await provider.clear();
+      expect(await store.readCookies(), isEmpty);
+    });
+
+    test('clearBilibiliCookies 清空 prefs', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        kFocubiliBiliCookieHeaderPrefsKey: 'SESSDATA=stale',
+      });
+      const PrefsBilibiliCookieStore store = PrefsBilibiliCookieStore();
+      await store.clearBilibiliCookies();
+      expect(await store.readCookies(), isEmpty);
+    });
+  });
+
+  group('createDefaultBilibiliCookieStore', () {
+    test('返回实现 BilibiliCookieStore 的实例', () {
+      final BilibiliCookieStore store = createDefaultBilibiliCookieStore();
+      expect(store, isA<BilibiliCookieStore>());
+      // VM / Linux CI → Prefs；Android 设备 → Platform。
+      expect(
+        store is PrefsBilibiliCookieStore ||
+            store is PlatformBilibiliCookieStore,
+        isTrue,
+      );
+    });
+
+    test('桌面默认 Auth 与播放 Cookie 提供方共用 prefs 键', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final BilibiliCookieStore store = createDefaultBilibiliCookieStore();
+      final CookieHeaderProvider provider = createCookieHeaderProvider();
+      // 本机 CI 为桌面时两侧皆 prefs；若为 Android 则跳过键互通断言。
+      if (store is! PrefsBilibiliCookieStore ||
+          provider is! PrefsCookieHeaderProvider) {
+        return;
+      }
+      const String cookie = 'SESSDATA=auth_playback_bridge';
+      await store.replaceCookies(cookie);
+      expect(await provider.readCookieHeader(), cookie);
+      expect(store.prefsKey, provider.prefsKey);
+      expect(store.prefsKey, kFocubiliBiliCookieHeaderPrefsKey);
+    });
+  });
 }
+
+/// 测试辅助：与 store 对齐的 prefs 键（避免魔法字符串漂移）。
+String kFocuBiliSameKeyAsStore(PrefsBilibiliCookieStore store) => store.prefsKey;

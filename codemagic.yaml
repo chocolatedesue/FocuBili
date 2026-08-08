@@ -1,12 +1,13 @@
 # FocuBili Codemagic cloud builds
 # Workflows:
-#   - android-apk   (linux)  → release APK
-#   - macos-build   (mac)    → unsigned .app zip
-#   - windows-build (windows)→ Release folder zip
+#   - android-apk   (mac free / linux paid) → release APK
+#   - macos-build   (mac)                  → unsigned .app zip
+#   - windows-build (windows_x2 paid)      → Release folder zip
 #
-# Desktop note: playback / notifications / Media3 use Android MethodChannels.
-# Win/mac builds produce installable app shells; native video remains limited
-# until desktop playback backends are added.
+# Playback: Android = Media3 (primary mobile). Desktop (Win/Linux/macOS) =
+# media_kit / libmpv (experimental). See docs/PLAYBACK_BACKEND.md.
+# Windows builds may also run via GitHub Actions when Codemagic Windows
+# instances are unavailable. Cookie paste on desktop shares prefs with playback.
 
 workflows:
   android-apk:

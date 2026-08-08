@@ -178,18 +178,20 @@ APK SHA-256：`4998C8EB9EF7F69C336F2A0BA50EF1772D6F154899506B4D2C10FFF5F91CFE95`
 - 竖屏右上角提供画中画、弹幕和更多设置；字幕与画面比例设置均可直接使用。
 - 播放器和详情共用一条滚动链路，向上浏览时播放器会连续缩小并完全收起。
 - Android Media3 直接播放 DASH 视频与音频，并通过 Flutter `Texture` 显示画面。
-- **桌面（Windows / Linux / macOS）默认使用 media_kit 实验性播放**（见 `docs/PLAYBACK_BACKEND.md`），以便专注跟播计时；登录与 Cookie 仍可后置。
+- **桌面（Windows / Linux / macOS）默认使用 media_kit（libmpv）实验性播放**（见 [`docs/PLAYBACK_BACKEND.md`](docs/PLAYBACK_BACKEND.md)），以便专注跟播计时。
 - 支持播放/暂停、进度拖动、双击快进/快退、长按临时三倍速、清晰度与倍速切换。
-- 支持横向滑动进度预览、竖向亮度/音量调节、沉浸全屏、画面比例、字幕、弹幕和画中画。
-- 支持 MediaSession、耳机和系统媒体按钮。
+- 支持横向滑动进度预览、竖向亮度/音量调节、沉浸全屏、画面比例、字幕、弹幕和画中画（部分能力仍以 Android 为主）。
+- 支持 MediaSession、耳机和系统媒体按钮（主要为 Android）。
 - 支持播放进度、最后分P、本机观看记录和有限容量的边播边缓存。
 - 支持按视频时间点创建本机笔记、保存当前画面，并在竖屏、全屏和“我的”页面继续管理。
-- 网络波动时会尝试 Media3 重试、备用 CDN 和有限次数播放数据刷新。
+- 网络波动时会尝试重试、备用 CDN 和有限次数播放数据刷新（Android Media3 路径更完整）。
 
 ### 登录与只读账号数据
 
-- 手机号、密码和人机验证均在 B 站官方网页中完成，FocuBili 不接触用户密码。
-- 支持应用 WebView 会话检测和用户主动导入 Cookie。
+- 手机号、密码和人机验证均在 B 站官方网页中完成，FocuBili 不接触用户密码（Android / 部分桌面）。
+- 支持应用 WebView 会话检测（Android；macOS 可尝试）和用户主动导入 Cookie。
+- **桌面推荐 Cookie 粘贴登录**：写入本机 prefs，与播放请求共用同一会话键；Windows 官方 WebView 登录受限。
+- 部分受权限控制的流仍需要有效 Cookie；公开试看是否可用取决于 CDN。
 - 支持只读查看收藏夹、收藏内容、已关注 UP 主和已订阅 UGC 合集。
 - 不提供收藏、取关、私信或其他账号写操作。
 
@@ -197,6 +199,7 @@ APK SHA-256：`4998C8EB9EF7F69C336F2A0BA50EF1772D6F154899506B4D2C10FFF5F91CFE95`
 
 - 项目依赖非官方公开接口，接口可能随平台策略调整而失效或触发风控。
 - 充电专属、会员、课程、番剧、私密或其他受访问控制保护的内容不会被绕过。
+- 桌面 media_kit 播放为**实验性**：依赖 libmpv / `media_kit_libs_video`；DASH 双轨等仍在演进。
 - 弹幕屏蔽词、透明度、字号、轨道记忆和解码策略仍待完善。
 - 时间点笔记目前只保存在当前设备，已支持手动导出和系统分享，但尚未提供自动同步或云备份。
 - 不同 Android 厂商的全屏安全区、画中画和后台恢复仍需要更多真机验证。
@@ -254,9 +257,9 @@ flutter build apk --release
 | `macos-build` | macOS `.app` zip（未签名） |
 | `windows-build` | Windows Release 目录 zip |
 
-接入步骤、可选 Android 签名与桌面能力限制见 [docs/CODEMAGIC.md](docs/CODEMAGIC.md)。
+接入步骤、可选 Android 签名与桌面能力说明见 [docs/CODEMAGIC.md](docs/CODEMAGIC.md)。
 
-> **桌面说明**：播放器依赖 Android Media3 MethodChannel。Win/mac 目前以「能编译、能下发」为主；完整桌面播放需后续移植。
+> **桌面说明**：Win/Linux/macOS 默认走 **media_kit（实验性）** 播放；Android 仍以 Media3 为主。Windows 构建也可走 GitHub Actions；Cookie 粘贴与播放共用 prefs 会话。详见 [`docs/PLAYBACK_BACKEND.md`](docs/PLAYBACK_BACKEND.md)。
 
 ## 项目结构
 

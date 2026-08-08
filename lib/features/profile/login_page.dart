@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -8,6 +10,22 @@ import '../../services/bilibili_request_policy.dart';
 
 /// 标识登录首页提供的手机号、密码和 Cookie 三种入口。
 enum _LoginMode { phone, password, cookie }
+
+/// 桌面（非 Web 的 Windows / macOS / Linux）。
+bool get _isDesktopIo {
+  if (kIsWeb) {
+    return false;
+  }
+  return Platform.isWindows || Platform.isLinux || Platform.isMacOS;
+}
+
+/// Windows：官方 `webview_flutter` 登录不可靠，优先 Cookie 粘贴。
+bool get _isWindowsDesktop {
+  if (kIsWeb) {
+    return false;
+  }
+  return Platform.isWindows;
+}
 
 /// 提供登录方式选择，并把账号密码与验证码交给 B 站官方页面处理。
 class LoginPage extends StatefulWidget {
@@ -26,7 +44,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final BilibiliAuthService _authService = BilibiliAuthService();
   final TextEditingController _cookieController = TextEditingController();
-  _LoginMode _mode = _LoginMode.phone;
+  late _LoginMode _mode;
   bool _submitting = false;
   bool _obscureCookie = true;
   bool _openedOfficialLoginOnStart = false;
@@ -36,7 +54,9 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    if (!widget.openOfficialLoginOnStart) {
+    // 桌面默认 Cookie 粘贴，与 prefs 播放会话同源；Windows 不自动开 WebView。
+    _mode = _isDesktopIo ? _LoginMode.cookie : _LoginMode.phone;
+    if (!widget.openOfficialLoginOnStart || _isWindowsDesktop) {
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -126,10 +146,14 @@ class _LoginPageState extends State<LoginPage> {
   /// 按当前选项创建手机号、密码说明入口或 Cookie 输入表单。
   Widget _buildSelectedMode() {
     if (_mode == _LoginMode.cookie) {
+      final String cookieHint = _isDesktopIo
+          ? '仅粘贴你自己账号的 Cookie（需含 SESSDATA）。验证成功后写入本机，'
+              '并与桌面播放共用同一会话；不会上传。'
+          : '仅粘贴你自己账号的 Cookie。内容只写入本应用的 WebView 会话容器。';
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          const Text('仅粘贴你自己账号的 Cookie。内容只写入本应用的 WebView 会话容器。'),
+          Text(cookieHint),
           const SizedBox(height: 14),
           TextField(
             controller: _cookieController,
@@ -161,6 +185,25 @@ class _LoginPageState extends State<LoginPage> {
       );
     }
     final bool phoneMode = _mode == _LoginMode.phone;
+    // Windows 上官方 WebView 登录不可用，引导回 Cookie 粘贴。
+    if (_isWindowsDesktop) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            phoneMode
+                ? 'Windows 桌面暂不支持应用内官方网页登录。请改用 Cookie 粘贴。'
+                : 'Windows 桌面暂不支持应用内官方密码网页登录。请改用 Cookie 粘贴。',
+          ),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            onPressed: () => _selectMode(<_LoginMode>{_LoginMode.cookie}),
+            icon: const Icon(Icons.cookie_outlined),
+            label: const Text('改用 Cookie 登录'),
+          ),
+        ],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -185,6 +228,7 @@ class _LoginPageState extends State<LoginPage> {
   /// 创建登录方式选择、隐私说明和当前登录表单。
   @override
   Widget build(BuildContext context) {
+    final bool hideOfficialWebLogin = _isWindowsDesktop;
     return Scaffold(
       appBar: AppBar(title: const Text('登录 B 站账号')),
       body: ListView(
@@ -224,17 +268,29 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 12),
-          OutlinedButton.icon(
-            // 网页登录入口函数允许用户直接使用 B 站完整官方登录流程。
-            onPressed: _openOfficialLogin,
-            icon: const Icon(Icons.language_rounded),
-            label: const Text('打开 B 站网页登录'),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            '说明：当前原生手机号/密码接口尚未直接接入；这样可以避免 App 接触密码，并确保验证码由官方页面完成。',
-            style: TextStyle(fontSize: 12),
-          ),
+          if (hideOfficialWebLogin)
+            const Text(
+              'Windows 桌面：官方 WebView 登录不可用，请使用上方 Cookie 粘贴。'
+              '部分流媒体仍需要有效会话 Cookie。',
+              style: TextStyle(fontSize: 12),
+            )
+          else ...<Widget>[
+            OutlinedButton.icon(
+              // 网页登录入口函数允许用户直接使用 B 站完整官方登录流程。
+              onPressed: _openOfficialLogin,
+              icon: const Icon(Icons.language_rounded),
+              label: const Text('打开 B 站网页登录'),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              _isDesktopIo
+                  ? '说明：桌面端推荐 Cookie 粘贴（与播放会话同源）。'
+                      'macOS/Linux 可尝试官方网页登录；原生手机号/密码接口尚未直接接入。'
+                  : '说明：当前原生手机号/密码接口尚未直接接入；这样可以避免 App 接触密码，'
+                      '并确保验证码由官方页面完成。',
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
         ],
       ),
     );
