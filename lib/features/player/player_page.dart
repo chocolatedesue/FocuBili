@@ -43,6 +43,7 @@ import 'enhancements/interactive_video_overlay.dart';
 import 'enhancements/playback_completion_overlay.dart';
 import 'enhancements/player_enhancement_controller.dart';
 import 'enhancements/video_chapter_widgets.dart';
+import 'player_video_surface.dart';
 import 'widgets/player_control_widgets.dart';
 
 part 'player_collection_sheet.dart';
@@ -3677,7 +3678,7 @@ class _PlayerPageState extends State<PlayerPage>
           ? _playbackSnapshot.videoAspectRatio
           : 16 / 9;
       final Widget texture = RepaintBoundary(
-        child: Texture(textureId: textureId),
+        child: PlayerVideoSurface(textureId: textureId),
       );
       return _buildFittedVideoOutput(texture, aspectRatio);
     }
