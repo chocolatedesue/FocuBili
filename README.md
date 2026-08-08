@@ -32,8 +32,8 @@ FocuBili 希望保留“主动找到一支视频并认真看完”这件事本�
 
 ## v1.2.1 更新内容
 
-- **多端发布**：提供 Android APK、Windows zip、macOS zip（实验性桌面；mac 包未公证）。最新构建见 [GitHub Release v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1)。
-- **桌面 media_kit 播放（实验性）**：Windows / macOS / Linux 默认使用 media_kit（libmpv），以便专注跟播计时；Android 仍以 Media3 为主。说明见 [`docs/PLAYBACK_BACKEND.md`](docs/PLAYBACK_BACKEND.md)。
+- **多端发布**：提供 Android APK（**按 ABI 拆分**，无 fat 包）、Windows zip、macOS zip（实验性桌面；mac 包未公证）。最新构建见 [GitHub Release v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1)；后续 Release 将列出多个 per-ABI APK（多数手机选 **arm64-v8a**）。
+- **media_kit 播放（实验性共享栈）**：Windows / macOS / Linux **与 Android 默认**均使用 media_kit（libmpv），以便专注跟播计时；Android 上 Media3 `NativePlaybackService` 仍保留供注入/回退。**iOS 未迁 media_kit。** 说明见 [`docs/PLAYBACK_BACKEND.md`](docs/PLAYBACK_BACKEND.md)、计划 [`docs/PLAN_ANDROID_MEDIA_KIT.md`](docs/PLAN_ANDROID_MEDIA_KIT.md)。
 - **宽屏首页观看历史**：较宽布局下首页展示本机观看历史网格，便于桌面续看。
 - **历史续播**：从首页或观看记录进入时，尽量恢复上次分 P 与播放位置。
 - **专注计时与缓冲**：正常视频缓冲不再误暂停专注累计。
@@ -191,16 +191,16 @@ APK SHA-256：`4998C8EB9EF7F69C336F2A0BA50EF1772D6F154899506B4D2C10FFF5F91CFE95`
 - 竖屏播放器按视频真实比例居中显示，默认不再用裁切方式放大竖屏视频。
 - 竖屏右上角提供画中画、弹幕和更多设置；字幕与画面比例设置均可直接使用。
 - 播放器和详情共用一条滚动链路，向上浏览时播放器会连续缩小并完全收起。
-- Android Media3 直接播放 DASH 视频与音频，并通过 Flutter `Texture` 显示画面。
-- **桌面（Windows / Linux / macOS）默认使用 media_kit（libmpv）实验性播放**（见 [`docs/PLAYBACK_BACKEND.md`](docs/PLAYBACK_BACKEND.md)），以便专注跟播计时。
+- **Android 与桌面（Windows / Linux / macOS）默认均使用 media_kit（libmpv）实验性播放**（共享栈；见 [`docs/PLAYBACK_BACKEND.md`](docs/PLAYBACK_BACKEND.md)），以便专注跟播计时。
+- Media3 + MethodChannel + Flutter `Texture` 的 `NativePlaybackService` **仍保留在工程中**，可供注入或调试回退；**iOS 未使用 media_kit**。
 - 支持播放/暂停、进度拖动、双击快进/快退、长按临时三倍速、清晰度与倍速切换。
-- 支持横向滑动进度预览、竖向亮度/音量调节、沉浸全屏、画面比例、字幕、弹幕和画中画（部分能力仍以 Android 为主）。
+- 支持横向滑动进度预览、竖向亮度/音量调节、沉浸全屏、画面比例、字幕、弹幕和画中画（部分系统能力仍以 Android 平台服务为主）。
 - 桌面播放页支持常用键盘快捷键（空格、方向键、全屏、静音、弹幕等）。
 - 支持 MediaSession、耳机和系统媒体按钮（主要为 Android）。
-- 支持播放进度、最后分P、本机观看记录和有限容量的边播边缓存（缓存路径以 Android 更完整）。
+- 支持播放进度、最后分P、本机观看记录；边播边缓存等在 media_kit 路径上可能弱于旧 Media3 主路径。
 - 本机观看记录可从首页宽屏网格或「我的」进入，并尽量恢复分P与进度。
-- 支持按视频时间点创建本机笔记、保存当前画面，并在竖屏、全屏和“我的”页面继续管理。
-- 网络波动时会尝试重试、备用 CDN 和有限次数播放数据刷新（Android Media3 路径更完整）。
+- 支持按视频时间点创建本机笔记、保存当前画面，并在竖屏、全屏和“我的”页面继续管理（截帧在 media_kit 上可能受限）。
+- 网络波动时会尝试重试、备用 CDN 和有限次数播放数据刷新。
 
 ### 登录与只读账号数据
 
@@ -215,7 +215,8 @@ APK SHA-256：`4998C8EB9EF7F69C336F2A0BA50EF1772D6F154899506B4D2C10FFF5F91CFE95`
 
 - 项目依赖非官方公开接口，接口可能随平台策略调整而失效或触发风控。
 - 充电专属、会员、课程、番剧、私密或其他受访问控制保护的内容不会被绕过。
-- 桌面 media_kit 播放为**实验性**：依赖 libmpv / `media_kit_libs_video`；DASH 双轨等仍在演进。
+- **Android 与桌面** media_kit 播放均为**实验性**：依赖 libmpv / `media_kit_libs_video`；DASH 双轨等仍在演进。iOS 不在 media_kit 路径上。
+- Android Release 为 **per-ABI 多 APK**（无 fat）；多数手机安装 **arm64-v8a**。见 [`docs/CODEMAGIC.md`](docs/CODEMAGIC.md)。
 - macOS 构建为未签名 / **未公证** zip，不提供 App Store 分发。
 - 弹幕屏蔽词、透明度、字号、轨道记忆和解码策略仍待完善。
 - 时间点笔记目前只保存在当前设备，已支持手动导出和系统分享，但尚未提供自动同步或云备份。
@@ -225,7 +226,13 @@ APK SHA-256：`4998C8EB9EF7F69C336F2A0BA50EF1772D6F154899506B4D2C10FFF5F91CFE95`
 
 ## 下载
 
-最新多端构建请从 **[chocolatedesue/FocuBili Releases](https://github.com/chocolatedesue/FocuBili/releases)** 获取，推荐标签 **[v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1)**（Android APK / Windows zip / macOS zip）。校验和见 [docs/RELEASE_NOTES_v1.2.1.md](docs/RELEASE_NOTES_v1.2.1.md)。
+最新多端构建请从 **[chocolatedesue/FocuBili Releases](https://github.com/chocolatedesue/FocuBili/releases)** 获取，推荐标签 **[v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1)**（Android / Windows zip / macOS zip）。校验和见 [docs/RELEASE_NOTES_v1.2.1.md](docs/RELEASE_NOTES_v1.2.1.md)。
+
+**Android 安装说明（ABI）：**
+
+- 发版形态转为 **按 CPU ABI 拆分的多个 APK**（`armeabi-v7a` / `arm64-v8a` / `x86_64`），**不提供** fat / universal 单包作为主发布物（体积与 media_kit 原生库有关）。
+- **绝大多数手机 / 平板请下载 `arm64-v8a`**；较老 32 位 ARM 用 `armeabi-v7a`；模拟器或 x86 设备用 `x86_64`。
+- 历史 Release 可能仍是单个 `*-android*.apk`；新构建与 Codemagic 产物命名见 [`docs/CODEMAGIC.md`](docs/CODEMAGIC.md)。
 
 较早 Android 版本仍可能出现在 [L1Xu4n/FocuBili Releases](https://github.com/L1Xu4n/FocuBili/releases)（上游 / 历史存档，非最新下载源）。
 
@@ -249,14 +256,19 @@ cd FocuBili
 flutter pub get
 dart analyze
 flutter test
-flutter build apk --release
+# 按 ABI 拆分；不要依赖 fat app-release.apk 作为发布物
+flutter build apk --release --split-per-abi
 ```
 
-Release APK 默认生成在：
+Split Release APK 默认生成在：
 
 ```text
-build/app/outputs/flutter-apk/app-release.apk
+build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+build/app/outputs/flutter-apk/app-x86_64-release.apk
 ```
+
+多数真机安装 `app-arm64-v8a-release.apk`。Gradle `splits.abi.universalApk = false` 与 Flutter `--split-per-abi` 对齐，见 [`docs/CODEMAGIC.md`](docs/CODEMAGIC.md)。
 
 Windows / macOS 桌面可参考 Flutter 官方桌面构建命令（需本机启用对应 desktop platform）；产物形态与云编译 zip 一致时便于对照 Release 资产。
 
@@ -265,7 +277,7 @@ Windows 用户建议把仓库放在不含中文和空格的目录。若必须使
 ```powershell
 subst X: "C:\path\to\FocuBili"
 Set-Location X:\
-flutter build apk --release
+flutter build apk --release --split-per-abi
 ```
 
 ### 云编译（Codemagic · GitHub Actions）
@@ -274,15 +286,15 @@ flutter build apk --release
 
 | 来源 | Workflow / 说明 | 产物 |
 |------|-----------------|------|
-| Codemagic | `android-apk` | Release APK |
+| Codemagic | `android-apk` | **per-ABI** Release APK（`armeabi-v7a` / `arm64-v8a` / `x86_64`，无 fat） |
 | Codemagic | `macos-build` | macOS `.app` zip（未签名 / 未公证） |
 | Codemagic | `windows-build` | Windows Release 目录 zip（需可用 Windows 实例） |
 | GitHub Actions | Windows 桌面构建 | Windows zip（见仓库 Actions / Release 资产） |
-| GitHub Release | [v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1) | 已打包 APK + Win/mac zip 与校验说明 |
+| GitHub Release | [v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1) | 已打包 APK + Win/mac zip 与校验说明（后续 Android 多为多 ABI） |
 
-接入步骤、可选 Android 签名与桌面能力说明见 [docs/CODEMAGIC.md](docs/CODEMAGIC.md)。
+接入步骤、可选 Android 签名、ABI 选择与桌面能力说明见 [docs/CODEMAGIC.md](docs/CODEMAGIC.md)。
 
-> **桌面说明**：Win/Linux/macOS 默认走 **media_kit（实验性）** 播放；Android 仍以 Media3 为主。Windows 构建也可走 GitHub Actions；Cookie 粘贴与播放共用 prefs 会话。详见 [`docs/PLAYBACK_BACKEND.md`](docs/PLAYBACK_BACKEND.md)。
+> **播放后端**：Win/Linux/macOS **与 Android 默认**均走 **media_kit（实验性）** 共享栈；Media3 Native 仍可注入回退；**iOS 未迁 media_kit**。Windows 构建也可走 GitHub Actions；桌面 Cookie 粘贴与播放共用 prefs 会话。详见 [`docs/PLAYBACK_BACKEND.md`](docs/PLAYBACK_BACKEND.md)、[`docs/PLAN_ANDROID_MEDIA_KIT.md`](docs/PLAN_ANDROID_MEDIA_KIT.md)。
 
 ## 项目结构
 
@@ -299,7 +311,7 @@ android/app/src/main/kotlin/com/focubili/app/
 └─ BilibiliCookieController.kt   # WebView Cookie 会话桥
 ```
 
-播放器已经按 Flutter 页面、控制栏、弹幕、合集和 Android Media3 / 桌面 media_kit 轨道策略拆分。首次安装时展示的完整声明见 [用户须知与使用协议](docs/USER_AGREEMENT.md)。
+播放器已经按 Flutter 页面、控制栏、弹幕、合集以及 **media_kit（Android 默认 + 桌面）** / Native Media3 回退路径拆分。首次安装时展示的完整声明见 [用户须知与使用协议](docs/USER_AGREEMENT.md)。
 
 ## 隐私与安全
 
