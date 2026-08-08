@@ -1,0 +1,201 @@
+# FocuBili Codemagic cloud builds
+# Workflows:
+#   - android-apk   (linux)  → release APK
+#   - macos-build   (mac)    → unsigned .app zip
+#   - windows-build (windows)→ Release folder zip
+#
+# Desktop note: playback / notifications / Media3 use Android MethodChannels.
+# Win/mac builds produce installable app shells; native video remains limited
+# until desktop playback backends are added.
+
+workflows:
+  android-apk:
+    name: FocuBili Android APK
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      flutter: stable
+      java: 17
+      vars:
+        PACKAGE_NAME: "com.focubili.app"
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+      - name: Unit and widget tests
+        script: |
+          flutter test
+      - name: Configure Android signing (optional)
+        script: |
+          set -euo pipefail
+          # Codemagic code signing group vars (CM_KEYSTORE*) or plain base64 secrets.
+          if [ -n "${CM_KEYSTORE:-}" ] || [ -n "${KEYSTORE_BASE64:-}" ]; then
+            echo "Release keystore detected; writing android/key.properties"
+            if [ -n "${CM_KEYSTORE:-}" ]; then
+              echo "$CM_KEYSTORE" | base64 --decode > "$CM_BUILD_DIR/keystore.jks"
+              STORE_PASSWORD="${CM_KEYSTORE_PASSWORD}"
+              KEY_PASSWORD="${CM_KEY_PASSWORD}"
+              KEY_ALIAS="${CM_KEY_ALIAS}"
+            else
+              echo "$KEYSTORE_BASE64" | base64 --decode > "$CM_BUILD_DIR/keystore.jks"
+              STORE_PASSWORD="${KEYSTORE_PASSWORD}"
+              KEY_PASSWORD="${KEY_PASSWORD}"
+              KEY_ALIAS="${KEY_ALIAS}"
+            fi
+            {
+              echo "storePassword=${STORE_PASSWORD}"
+              echo "keyPassword=${KEY_PASSWORD}"
+              echo "keyAlias=${KEY_ALIAS}"
+              echo "storeFile=${CM_BUILD_DIR}/keystore.jks"
+            } > android/key.properties
+          else
+            echo "No keystore secrets; release APK will use debug signing."
+          fi
+      - name: Build Android release APK
+        script: |
+          flutter build apk --release \
+            --build-name=1.2.${PROJECT_BUILD_NUMBER} \
+            --build-number=${PROJECT_BUILD_NUMBER}
+      - name: Rename APK artifact
+        script: |
+          set -euo pipefail
+          mkdir -p codemagic-artifacts
+          SRC="build/app/outputs/flutter-apk/app-release.apk"
+          DEST="codemagic-artifacts/FocuBili-android-b${PROJECT_BUILD_NUMBER}.apk"
+          cp "$SRC" "$DEST"
+          cp "$SRC" "codemagic-artifacts/FocuBili-android-latest.apk"
+          sha256sum "$DEST" | tee "codemagic-artifacts/FocuBili-android-b${PROJECT_BUILD_NUMBER}.sha256"
+    artifacts:
+      - codemagic-artifacts/*.apk
+      - codemagic-artifacts/*.sha256
+      - build/app/outputs/flutter-apk/*.apk
+    publishing:
+      email:
+        recipients:
+          - chocolatedesue@outlook.com
+        notify:
+          success: true
+          failure: true
+
+  macos-build:
+    name: FocuBili macOS Build
+    max_build_duration: 120
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+      - name: Enable macOS desktop support
+        script: |
+          flutter config --enable-macos-desktop
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+      - name: Build Flutter macOS (release, unsigned)
+        script: |
+          flutter build macos --release \
+            --build-name=1.2.${PROJECT_BUILD_NUMBER} \
+            --build-number=${PROJECT_BUILD_NUMBER}
+      - name: Create artifact archive
+        script: |
+          set -euo pipefail
+          mkdir -p codemagic-artifacts
+          # PRODUCT_NAME in macos/Runner/Configs/AppInfo.xcconfig is FocuBili
+          APP_PATH="build/macos/Build/Products/Release/FocuBili.app"
+          if [ ! -d "$APP_PATH" ]; then
+            APP_PATH="$(find build/macos -name '*.app' -maxdepth 6 | head -1 || true)"
+          fi
+          if [ -z "${APP_PATH}" ] || [ ! -d "${APP_PATH}" ]; then
+            echo "macOS .app not found under build/macos"
+            find build/macos -maxdepth 8 -type d -name '*.app' || true
+            exit 1
+          fi
+          echo "Packaging app at: ${APP_PATH}"
+          APP_DIR="$(dirname "${APP_PATH}")"
+          APP_BASE="$(basename "${APP_PATH}")"
+          ZIP_NAME="FocuBili-macos-b${PROJECT_BUILD_NUMBER}.zip"
+          (
+            cd "${APP_DIR}"
+            ditto -c -k --keepParent "${APP_BASE}" "${ZIP_NAME}"
+            cp "${ZIP_NAME}" "FocuBili-macos-latest.zip"
+          )
+          cp "${APP_DIR}/${ZIP_NAME}" "codemagic-artifacts/"
+          cp "${APP_DIR}/FocuBili-macos-latest.zip" "codemagic-artifacts/"
+    artifacts:
+      - build/macos/Build/Products/Release/*.app
+      - build/macos/**/*.zip
+      - codemagic-artifacts/*.zip
+    publishing:
+      email:
+        recipients:
+          - chocolatedesue@outlook.com
+        notify:
+          success: true
+          failure: true
+
+  windows-build:
+    name: FocuBili Windows Build
+    max_build_duration: 120
+    instance_type: windows_x2
+    environment:
+      flutter: stable
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+      - name: Enable Windows desktop support
+        script: |
+          flutter config --enable-windows-desktop
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+      - name: Build Flutter Windows (release)
+        script: |
+          flutter build windows --release \
+            --build-name=1.2.${PROJECT_BUILD_NUMBER} \
+            --build-number=${PROJECT_BUILD_NUMBER}
+      - name: Package Windows release folder
+        script: |
+          set -euo pipefail
+          mkdir -p codemagic-artifacts
+          REL_DIR="build/windows/x64/runner/Release"
+          if [ ! -d "${REL_DIR}" ]; then
+            REL_DIR="$(find build/windows -type d -name Release | head -1 || true)"
+          fi
+          if [ -z "${REL_DIR}" ] || [ ! -d "${REL_DIR}" ]; then
+            echo "Windows Release directory not found"
+            find build/windows -maxdepth 8 -type d || true
+            exit 1
+          fi
+          echo "Packaging: ${REL_DIR}"
+          ZIP_NAME="FocuBili-windows-b${PROJECT_BUILD_NUMBER}.zip"
+          if command -v powershell.exe >/dev/null 2>&1; then
+            powershell.exe -NoProfile -Command \
+              "Compress-Archive -Path '${REL_DIR}\\*' -DestinationPath '${ZIP_NAME}' -Force"
+          elif command -v zip >/dev/null 2>&1; then
+            (cd "${REL_DIR}" && zip -r "${CM_BUILD_DIR}/${ZIP_NAME}" .)
+          else
+            ZIP_NAME="FocuBili-windows-b${PROJECT_BUILD_NUMBER}.tar.gz"
+            tar -czf "${ZIP_NAME}" -C "${REL_DIR}" .
+          fi
+          cp -f FocuBili-windows-b${PROJECT_BUILD_NUMBER}.* codemagic-artifacts/ 2>/dev/null || true
+          ls -la codemagic-artifacts/ || true
+          ls -la "${REL_DIR}" | head -30
+    artifacts:
+      - build/windows/**/runner/Release/**
+      - FocuBili-windows-*.zip
+      - FocuBili-windows-*.tar.gz
+      - codemagic-artifacts/*
+    publishing:
+      email:
+        recipients:
+          - chocolatedesue@outlook.com
+        notify:
+          success: true
+          failure: true

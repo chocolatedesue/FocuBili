@@ -210,9 +210,9 @@ APK SHA-256：`4998C8EB9EF7F69C336F2A0BA50EF1772D6F154899506B4D2C10FFF5F91CFE95`
 
 ### 环境
 
-- Flutter 3.44.6 stable
+- Flutter 3.44.6+ stable（README 徽章对应验证版本；Codemagic 使用 `stable` channel）
 - Dart 3.12.2（随 Flutter SDK 提供，无需单独安装）
-- JDK 21
+- JDK 21（本地）/ JDK 17（Codemagic Android workflow）
 - Android SDK 36
 - Android NDK 28.2.13676358
 
@@ -242,6 +242,20 @@ subst X: "C:\path\to\FocuBili"
 Set-Location X:\
 flutter build apk --release
 ```
+
+### 云编译（Codemagic）
+
+仓库根目录提供 [`codemagic.yaml`](codemagic.yaml)，支持：
+
+| Workflow | 产物 |
+|----------|------|
+| `android-apk` | Release APK |
+| `macos-build` | macOS `.app` zip（未签名） |
+| `windows-build` | Windows Release 目录 zip |
+
+接入步骤、可选 Android 签名与桌面能力限制见 [docs/CODEMAGIC.md](docs/CODEMAGIC.md)。
+
+> **桌面说明**：播放器依赖 Android Media3 MethodChannel。Win/mac 目前以「能编译、能下发」为主；完整桌面播放需后续移植。
 
 ## 项目结构
 

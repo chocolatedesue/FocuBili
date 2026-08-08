@@ -12,6 +12,9 @@ captures/
 .flutter-plugins
 .flutter-plugins-dependencies
 android/local.properties
+codemagic-artifacts/
+macos/Flutter/ephemeral/
+windows/flutter/ephemeral/
 
 # 本地开发记录与旧版本备份不进入公开仓库。
 .local-backup/
