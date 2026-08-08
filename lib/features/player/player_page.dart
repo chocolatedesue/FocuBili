@@ -24,6 +24,8 @@ import '../../models/learning_list_entry.dart';
 import '../../services/device_status_service.dart';
 import '../../services/external_link_service.dart';
 import '../../services/native_playback_service.dart';
+import '../../services/playback_service_factory.dart';
+import '../../services/playback_service_media_kit_ext.dart';
 import '../../services/player_overlay_service.dart';
 import '../../services/problem_diagnostics_service.dart';
 import '../../services/bilibili_public_content_service.dart';
@@ -185,6 +187,8 @@ class _PlayerPageState extends State<PlayerPage>
   StreamSubscription<PlaybackSnapshot>? _playbackSubscription;
   PlaybackSnapshot _playbackSnapshot = const PlaybackSnapshot();
   int? _textureId;
+  /// media_kit [VideoController] when [_playbackService] is [MediaKitSurfaceHost].
+  Object? _mediaKitVideoController;
   bool _fullscreen = false;
   bool _controlsLocked = false;
   bool _fullscreenEnteredByOrientation = false;
@@ -326,7 +330,7 @@ class _PlayerPageState extends State<PlayerPage>
     _activeVideo = widget.video;
     _currentPart = _activeVideo.initialPart;
     _notePartCid = _currentPart.cid;
-    _playbackService = widget.playbackService ?? NativePlaybackService();
+    _playbackService = widget.playbackService ?? createPlaybackService();
     _watchHistoryService = widget.watchHistoryService ?? WatchHistoryService();
     _learningListService = widget.learningListService ?? LearningListService();
     _deviceStatusService =
@@ -1126,7 +1130,16 @@ class _PlayerPageState extends State<PlayerPage>
       if (!mounted) {
         return;
       }
-      setState(() => _textureId = textureId);
+      Object? mediaKitController;
+      final PlaybackService service = _playbackService;
+      if (service is MediaKitSurfaceHost) {
+        mediaKitController =
+            (service as MediaKitSurfaceHost).videoController;
+      }
+      setState(() {
+        _textureId = textureId;
+        _mediaKitVideoController = mediaKitController;
+      });
       await _playbackService.openVideo(
         _activeVideo,
         part: _currentPart,
@@ -3670,15 +3683,19 @@ class _PlayerPageState extends State<PlayerPage>
       );
   }
 
-  /// 创建原生 Texture 视频画面，并在横竖屏中统一应用用户选择的比例模式。
+  /// 创建视频画面槽位（Texture 或 media_kit Video），并统一应用比例模式。
   Widget _buildVideoOutput() {
     final int? textureId = _textureId;
-    if (textureId != null) {
+    final Object? mediaKitController = _mediaKitVideoController;
+    if (textureId != null || mediaKitController != null) {
       final double aspectRatio = _playbackSnapshot.videoAspectRatio > 0
           ? _playbackSnapshot.videoAspectRatio
           : 16 / 9;
       final Widget texture = RepaintBoundary(
-        child: PlayerVideoSurface(textureId: textureId),
+        child: PlayerVideoSurface(
+          textureId: textureId,
+          videoController: mediaKitController,
+        ),
       );
       return _buildFittedVideoOutput(texture, aspectRatio);
     }

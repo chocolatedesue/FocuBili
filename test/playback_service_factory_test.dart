@@ -1,4 +1,8 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:focubili/services/media_kit_playback_service.dart';
 import 'package:focubili/services/native_playback_service.dart';
 import 'package:focubili/services/playback_contracts.dart';
 import 'package:focubili/services/playback_service_factory.dart';
@@ -6,11 +10,18 @@ import 'package:focubili/services/playback_service_factory.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('createPlaybackService returns NativePlaybackService on all platforms', () {
+  test('createPlaybackService returns platform-appropriate backend', () {
     final PlaybackService service = createPlaybackService();
-    expect(service, isA<NativePlaybackService>());
-    // MethodChannel is set up in the constructor; dispose cleans the handler.
     addTearDown(service.dispose);
+
+    final bool desktop = !kIsWeb &&
+        (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+    if (desktop) {
+      // VM / Linux CI and desktop hosts default to media_kit.
+      expect(service, isA<MediaKitPlaybackService>());
+    } else {
+      expect(service, isA<NativePlaybackService>());
+    }
   });
 
   test('PlayUrlManifest holds DASH fields used by later waves', () {
