@@ -6,23 +6,32 @@ via `createPlaybackService()` in `lib/services/playback_service_factory.dart`.
 
 **End-user install:** [GitHub Release v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1)  
 **Desktop user guide (中文):** [`DESKTOP.md`](DESKTOP.md)  
-**Cloud builds:** [`CODEMAGIC.md`](CODEMAGIC.md)
+**Cloud builds:** [`CODEMAGIC.md`](CODEMAGIC.md)  
+**Android media_kit + ABI split plan:** [`PLAN_ANDROID_MEDIA_KIT.md`](PLAN_ANDROID_MEDIA_KIT.md)
 
 ## Current
 
 | Platform | Backend | Notes |
 |----------|---------|--------|
 | Linux / Windows / macOS | `MediaKitPlaybackService` | **Experimental** media_kit / libmpv — real playback, not a compile-only shell; `PlayerVideoSurface` embeds `VideoController` |
-| Android | `NativePlaybackService` | Media3 via MethodChannel + Flutter `Texture` (primary mobile path) |
-| iOS / other / web guard | `NativePlaybackService` | Channel is Android-oriented today |
+| **Android** | **`MediaKitPlaybackService` (default)** | Same experimental media_kit / libmpv stack as desktop (shared path). `NativePlaybackService` (Media3 + MethodChannel + Flutter `Texture`) stays in-tree for injection / debug fallback |
+| iOS / other / web guard | `NativePlaybackService` | Channel is Android-oriented today; **iOS is not on media_kit** in this plan |
 | Unit tests | Injected fake preferred | VM on Linux gets `MediaKitPlaybackService` if factory is used |
 
-Desktop focus follow-watch timing depends on a real `isPlaying` / phase stream
-from media_kit; that is why desktop defaults move off the Android-only channel.
+Android and desktop focus follow-watch timing both depend on a real `isPlaying` /
+phase stream from media_kit. That is why the default factory path uses media_kit
+on Android as well as on desktop.
 
 `PlayerPage` defaults to `widget.playbackService ?? createPlaybackService()`.
 After `initialize()`, if the service `is MediaKitSurfaceHost`, the page passes
 `host.videoController` into `PlayerVideoSurface`.
+
+### Native retention (Android)
+
+- Kotlin Media3 / MethodChannel code is **not** deleted in this phase.
+- Call sites may still **inject** `NativePlaybackService` (tests, debug, or an
+  optional env / debug switch such as `FOCUBILI_USE_NATIVE_PLAYBACK` when wired).
+- Media3 Gradle deps may remain while the native path is a supported fallback.
 
 ## Auth cookie (desktop = playback)
 
@@ -34,7 +43,7 @@ Desktop login and playurl / media HTTP share one SharedPreferences key:
 
 - Playback: `createCookieHeaderProvider()` → `PrefsCookieHeaderProvider` on desktop.
 - Auth: `createDefaultBilibiliCookieStore()` → `PrefsBilibiliCookieStore` on non-Android (same key).
-- Android still uses the WebView / platform cookie channel for the primary path.
+- Android still uses the WebView / platform cookie channel for the primary login path.
 - **Cookie paste** is the reliable desktop login path (especially Windows, where official WebView login is unavailable).
 
 Paste once in the login UI; the same header is used for media requests that need a session.
@@ -88,24 +97,30 @@ without a fake `MediaKitHostFactory`.
 
 ```dart
 PlaybackService createPlaybackService();
+// Optional testable pure branch (when present):
+// PlaybackService createPlaybackServiceForPlatform({required bool isAndroid, required bool isDesktop, ...});
 ```
 
-Branching (simplified):
+Branching (simplified target):
 
 ```dart
 if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
   return MediaKitPlaybackService();
 }
-return NativePlaybackService();
+if (!kIsWeb && Platform.isAndroid) {
+  return MediaKitPlaybackService(); // default; Native retained for inject/fallback
+}
+return NativePlaybackService(); // iOS / other
 ```
 
 ## Residual risks
 
-- **Experimental desktop playback**: libmpv path; codecs / EDL dual-track behavior may change. DASH video+audio uses mpv `edl://`; no automatic video-only fallback yet if EDL fails.
+- **Experimental media_kit (desktop + Android default)**: libmpv path; codecs / EDL dual-track behavior may change. DASH video+audio uses mpv `edl://`; no automatic video-only fallback yet if EDL fails.
 - **libmpv on Linux**: packages need `media_kit_libs_video` / system mpv; CI unit tests avoid live Player via fakes.
+- **Android APK size**: media_kit native libs are large; release packaging uses **per-ABI split APKs** (no fat universal) — see [`CODEMAGIC.md`](CODEMAGIC.md). Prefer **arm64-v8a** on most phones.
 - **Cookie still required for many streams**: public trial may work with empty cookie depending on CDN; higher qualities often need a valid session.
 - **Public content service vs prefs cookie**: `BilibiliHttpPublicContentService` may still default to `PlatformBilibiliCookieStore` rather than the desktop prefs key — account-ish public APIs can diverge from the playback cookie path until unified.
 - **macOS unsigned**: Codemagic / Release macOS zips are typically **not** Apple-notarized; Gatekeeper may block first launch (see [`DESKTOP.md`](DESKTOP.md)).
-- **Android-only features**: system alarm / DND / progressive download cache are not 1:1 on desktop.
+- **Android-native-only features on media_kit path**: system alarm / DND remain platform services; progressive download cache, MediaSession depth, and frame capture may be weaker or stubbed vs the old Media3 primary path (same class of limits as desktop media_kit).
 - **History part mismatch**: if page/title cannot resolve CID, resume may seek on the wrong part without a strong user warning.
-- **Android**: unchanged Media3 path; dual-backend optional later.
+- **iOS**: not migrated to media_kit; still `NativePlaybackService` / channel-oriented.
