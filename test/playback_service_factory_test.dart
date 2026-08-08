@@ -10,14 +10,85 @@ import 'package:focubili/services/playback_service_factory.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  group('createPlaybackServiceForTargets', () {
+    PlaybackService build({
+      bool isAndroid = false,
+      bool isIOS = false,
+      bool isWindows = false,
+      bool isLinux = false,
+      bool isMacOS = false,
+      bool isWeb = false,
+    }) {
+      return createPlaybackServiceForTargets(
+        isAndroid: isAndroid,
+        isIOS: isIOS,
+        isWindows: isWindows,
+        isLinux: isLinux,
+        isMacOS: isMacOS,
+        isWeb: isWeb,
+      );
+    }
+
+    test('Android → MediaKitPlaybackService', () {
+      final PlaybackService service = build(isAndroid: true);
+      addTearDown(service.dispose);
+      expect(service, isA<MediaKitPlaybackService>());
+    });
+
+    test('Windows → MediaKitPlaybackService', () {
+      final PlaybackService service = build(isWindows: true);
+      addTearDown(service.dispose);
+      expect(service, isA<MediaKitPlaybackService>());
+    });
+
+    test('Linux → MediaKitPlaybackService', () {
+      final PlaybackService service = build(isLinux: true);
+      addTearDown(service.dispose);
+      expect(service, isA<MediaKitPlaybackService>());
+    });
+
+    test('macOS → MediaKitPlaybackService', () {
+      final PlaybackService service = build(isMacOS: true);
+      addTearDown(service.dispose);
+      expect(service, isA<MediaKitPlaybackService>());
+    });
+
+    test('iOS → NativePlaybackService', () {
+      final PlaybackService service = build(isIOS: true);
+      addTearDown(service.dispose);
+      expect(service, isA<NativePlaybackService>());
+    });
+
+    test('Web → NativePlaybackService', () {
+      final PlaybackService service = build(isWeb: true);
+      addTearDown(service.dispose);
+      expect(service, isA<NativePlaybackService>());
+    });
+
+    test('unknown / all false → NativePlaybackService', () {
+      final PlaybackService service = build();
+      addTearDown(service.dispose);
+      expect(service, isA<NativePlaybackService>());
+    });
+
+    test('Web wins over desktop flags', () {
+      final PlaybackService service = build(isWeb: true, isLinux: true);
+      addTearDown(service.dispose);
+      expect(service, isA<NativePlaybackService>());
+    });
+  });
+
   test('createPlaybackService returns platform-appropriate backend', () {
     final PlaybackService service = createPlaybackService();
     addTearDown(service.dispose);
 
-    final bool desktop = !kIsWeb &&
-        (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
-    if (desktop) {
-      // VM / Linux CI and desktop hosts default to media_kit.
+    final bool mediaKitHost = !kIsWeb &&
+        (Platform.isWindows ||
+            Platform.isLinux ||
+            Platform.isMacOS ||
+            Platform.isAndroid);
+    if (mediaKitHost) {
+      // VM / Linux CI, desktop, and Android default to media_kit.
       expect(service, isA<MediaKitPlaybackService>());
     } else {
       expect(service, isA<NativePlaybackService>());
