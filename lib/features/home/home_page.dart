@@ -2,17 +2,20 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../core/layout/adaptive_layout.dart';
 import '../../core/router/app_router.dart';
 import '../../models/focus_session.dart';
 import '../../models/learning_list_entry.dart';
 import '../../services/bilibili_auth_service.dart';
 import '../../services/bilibili_service.dart';
 import '../../services/learning_list_service.dart';
+import '../../services/watch_history_service.dart';
 import '../focus/focus_dashboard.dart';
 import '../focus/focus_timer_scope.dart';
 import '../focus/focus_video_launcher.dart';
 import '../learning/learning_list_page.dart';
 import '../learning/learning_video_launcher.dart';
+import 'home_watch_history_section.dart';
 
 /// 专注导向的首页，把目标计时作为主动观看前的第一入口。
 class HomePage extends StatefulWidget {
@@ -24,6 +27,7 @@ class HomePage extends StatefulWidget {
     this.learningListService,
     this.videoService,
     this.authService,
+    this.watchHistoryService,
     this.refreshGeneration = 0,
   });
 
@@ -32,6 +36,7 @@ class HomePage extends StatefulWidget {
   final LearningListService? learningListService;
   final BilibiliService? videoService;
   final BilibiliAuthService? authService;
+  final WatchHistoryService? watchHistoryService;
   final int refreshGeneration;
 
   /// 创建首页状态，用于读取并刷新唯一突出显示的继续学习任务。
@@ -299,6 +304,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   /// 创建使用应用级计时控制器的专注台，切换标签不会丢失当前状态。
   @override
   Widget build(BuildContext context) {
+    final double screenWidth = MediaQuery.sizeOf(context).width;
+    final Widget? watchHistory = AdaptiveLayout.showHomeWatchHistory(
+      screenWidth,
+    )
+        ? HomeWatchHistorySection(
+            historyService: widget.watchHistoryService,
+            bilibiliService: _videoService,
+            refreshGeneration: widget.refreshGeneration,
+          )
+        : null;
     return FocusDashboard(
       controller: FocusTimerScope.of(context),
       onOpenVideo: widget.onSearchRequested,
@@ -311,6 +326,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           _openLinkedVideo(context, session),
       continueLearningCard: _buildContinueLearningCard(context),
       onOpenLearningList: () => unawaited(_openLearningList()),
+      watchHistorySection: watchHistory,
     );
   }
 }

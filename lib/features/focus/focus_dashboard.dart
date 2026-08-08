@@ -25,6 +25,7 @@ class FocusDashboard extends StatefulWidget {
     this.onOpenLinkedVideo,
     this.continueLearningCard,
     this.onOpenLearningList,
+    this.watchHistorySection,
   });
 
   final FocusTimerController controller;
@@ -41,6 +42,9 @@ class FocusDashboard extends StatefulWidget {
 
   /// 打开完整学习清单的回调，由外层首页决定页面和本机服务实例。
   final VoidCallback? onOpenLearningList;
+
+  /// 宽屏首页的本机观看历史网格；为空时不展示（窄屏默认）。
+  final Widget? watchHistorySection;
 
   /// 创建保存目标输入和预设时长选择的页面状态。
   @override
@@ -903,10 +907,13 @@ class _FocusDashboardState extends State<FocusDashboard> {
   ) {
     return SliverLayoutBuilder(
       builder: (BuildContext context, SliverConstraints constraints) {
+        final bool showWatchHistory = widget.watchHistorySection != null;
         final double horizontalPadding =
             AdaptiveLayout.centeredHorizontalPadding(
               width: constraints.crossAxisExtent,
-              maxContentWidth: AdaptiveLayout.homeContentMaxWidth,
+              maxContentWidth: showWatchHistory
+                  ? AdaptiveLayout.homeWithHistoryMaxWidth
+                  : AdaptiveLayout.homeContentMaxWidth,
             );
         return SliverPadding(
           key: const Key('focus-adaptive-cards'),
@@ -942,6 +949,10 @@ class _FocusDashboardState extends State<FocusDashboard> {
                 _buildTodaySummary(context),
                 const SizedBox(height: 14),
                 _buildRecentHistory(context),
+                if (showWatchHistory) ...<Widget>[
+                  const SizedBox(height: 14),
+                  widget.watchHistorySection!,
+                ],
                 if (widget.onOpenProfile != null) ...<Widget>[
                   const SizedBox(height: 14),
                   _buildHomeActionsCard(context),

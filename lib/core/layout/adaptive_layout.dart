@@ -6,8 +6,29 @@ abstract final class AdaptiveLayout {
   /// 从 840 逻辑像素起使用更宽松的横屏平板留白。
   static const double expandedBreakpoint = 840;
 
+  /// 从 900 逻辑像素起在首页展示本机观看历史网格（桌面/宽分屏）。
+  static const double homeWatchHistoryBreakpoint = 900;
+
   /// 首页专注卡片保持舒适阅读宽度，不随平板横屏无限拉长。
   static const double homeContentMaxWidth = 840;
+
+  /// 首页挂载观看历史区时放宽内容限宽，便于多列封面。
+  static const double homeWithHistoryMaxWidth = 1100;
+
+  /// 是否在首页展示「最近观看」网格（窄屏仍走「我的 → 观看记录」）。
+  static bool showHomeWatchHistory(double width) =>
+      width >= homeWatchHistoryBreakpoint;
+
+  /// 首页观看历史网格列数：宽屏 4 列，桌面 3 列。
+  static int homeWatchHistoryColumnCount(double width) {
+    if (width >= 1200) {
+      return 4;
+    }
+    if (width >= homeWatchHistoryBreakpoint) {
+      return 3;
+    }
+    return 2;
+  }
 
   /// 搜索结果需要容纳封面和信息，因此允许比首页卡片稍宽。
   static const double searchContentMaxWidth = 960;

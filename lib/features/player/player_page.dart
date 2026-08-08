@@ -45,6 +45,7 @@ import 'enhancements/interactive_video_overlay.dart';
 import 'enhancements/playback_completion_overlay.dart';
 import 'enhancements/player_enhancement_controller.dart';
 import 'enhancements/video_chapter_widgets.dart';
+import 'player_keyboard_intents.dart';
 import 'player_video_surface.dart';
 import 'widgets/player_control_widgets.dart';
 
@@ -241,6 +242,8 @@ class _PlayerPageState extends State<PlayerPage>
   int? _shownRestoredCid;
   double _brightness = 0.5;
   double _volume = 0.5;
+  /// 静音前的音量；为 null 表示当前未处于快捷键静音状态。
+  double? _volumeBeforeMute;
   double _verticalGestureStartLevel = 0.5;
   double _verticalGestureDelta = 0;
   _VerticalAdjustmentMode _verticalAdjustmentMode =
@@ -1689,6 +1692,133 @@ class _PlayerPageState extends State<PlayerPage>
   void _togglePlayback() {
     _showPlayerControls();
     unawaited(_setPlaybackActive(!_playing));
+  }
+
+  /// 桌面快捷键：在可编辑焦点内不拦截，避免打断笔记/搜索输入。
+  bool _shouldIgnoreDesktopShortcut() {
+    return playerShortcutShouldIgnoreForFocus();
+  }
+
+  /// 快捷键调整媒体音量，步长 5%，并短暂显示反馈。
+  void _adjustVolumeByShortcut(double delta) {
+    if (_shouldIgnoreDesktopShortcut()) {
+      return;
+    }
+    final double next = (_volume + delta).clamp(0.0, 1.0).toDouble();
+    _volumeBeforeMute = null;
+    setState(() => _volume = next);
+    unawaited(_playbackService.setMediaVolume(next));
+    _showAdjustmentFeedback('音量 ${(next * 100).round()}%');
+    _showPlayerControls();
+  }
+
+  /// 快捷键静音或恢复静音前音量。
+  void _toggleMuteByShortcut() {
+    if (_shouldIgnoreDesktopShortcut()) {
+      return;
+    }
+    if (_volume > 0.001) {
+      _volumeBeforeMute = _volume;
+      setState(() => _volume = 0);
+      unawaited(_playbackService.setMediaVolume(0));
+      _showAdjustmentFeedback('已静音');
+    } else {
+      final double restored =
+          (_volumeBeforeMute != null && _volumeBeforeMute! > 0.001)
+          ? _volumeBeforeMute!
+          : 0.5;
+      _volumeBeforeMute = null;
+      setState(() => _volume = restored);
+      unawaited(_playbackService.setMediaVolume(restored));
+      _showAdjustmentFeedback('音量 ${(restored * 100).round()}%');
+    }
+    _showPlayerControls();
+  }
+
+  /// 为播放页组装桌面 Shortcuts / Actions；触控路径不受影响。
+  Widget _wrapWithDesktopShortcuts(Widget child) {
+    return Shortcuts(
+      shortcuts: playerDesktopShortcutBindings(),
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          PlayerTogglePlayIntent: CallbackAction<PlayerTogglePlayIntent>(
+            onInvoke: (PlayerTogglePlayIntent intent) {
+              if (_shouldIgnoreDesktopShortcut()) {
+                return null;
+              }
+              _togglePlayback();
+              return null;
+            },
+          ),
+          PlayerBackIntent: CallbackAction<PlayerBackIntent>(
+            onInvoke: (PlayerBackIntent intent) {
+              // Esc 与返回键一致：笔记 → 全屏 → 离开，输入框内也允许退出一层。
+              _handleBackPressed();
+              return null;
+            },
+          ),
+          PlayerSeekBackwardIntent: CallbackAction<PlayerSeekBackwardIntent>(
+            onInvoke: (PlayerSeekBackwardIntent intent) {
+              if (_shouldIgnoreDesktopShortcut() || _controlsLocked) {
+                return null;
+              }
+              _seekBy(-intent.seconds, showFeedback: true);
+              return null;
+            },
+          ),
+          PlayerSeekForwardIntent: CallbackAction<PlayerSeekForwardIntent>(
+            onInvoke: (PlayerSeekForwardIntent intent) {
+              if (_shouldIgnoreDesktopShortcut() || _controlsLocked) {
+                return null;
+              }
+              _seekBy(intent.seconds, showFeedback: true);
+              return null;
+            },
+          ),
+          PlayerVolumeUpIntent: CallbackAction<PlayerVolumeUpIntent>(
+            onInvoke: (PlayerVolumeUpIntent intent) {
+              _adjustVolumeByShortcut(0.05);
+              return null;
+            },
+          ),
+          PlayerVolumeDownIntent: CallbackAction<PlayerVolumeDownIntent>(
+            onInvoke: (PlayerVolumeDownIntent intent) {
+              _adjustVolumeByShortcut(-0.05);
+              return null;
+            },
+          ),
+          PlayerToggleMuteIntent: CallbackAction<PlayerToggleMuteIntent>(
+            onInvoke: (PlayerToggleMuteIntent intent) {
+              _toggleMuteByShortcut();
+              return null;
+            },
+          ),
+          PlayerToggleFullscreenIntent:
+              CallbackAction<PlayerToggleFullscreenIntent>(
+                onInvoke: (PlayerToggleFullscreenIntent intent) {
+                  if (_shouldIgnoreDesktopShortcut() || _controlsLocked) {
+                    return null;
+                  }
+                  unawaited(_toggleFullscreen());
+                  return null;
+                },
+              ),
+          PlayerToggleControlsIntent: CallbackAction<PlayerToggleControlsIntent>(
+            onInvoke: (PlayerToggleControlsIntent intent) {
+              if (_shouldIgnoreDesktopShortcut()) {
+                return null;
+              }
+              _toggleControls();
+              return null;
+            },
+          ),
+        },
+        child: Focus(
+          autofocus: true,
+          child: child,
+        ),
+      ),
+    );
   }
 
   /// 执行原生播放或暂停命令，并把平台异常转换为页面可读的错误。
@@ -6468,11 +6598,13 @@ class _PlayerPageState extends State<PlayerPage>
         child: pageBody,
       ),
     );
-    return PopScope(
-      canPop: _allowRoutePop,
-      // 系统返回函数保证先退出全屏或返回上一支合集视频，再离开页面。
-      onPopInvokedWithResult: _handlePopInvoked,
-      child: pageScaffold,
+    return _wrapWithDesktopShortcuts(
+      PopScope(
+        canPop: _allowRoutePop,
+        // 系统返回函数保证先退出全屏或返回上一支合集视频，再离开页面。
+        onPopInvokedWithResult: _handlePopInvoked,
+        child: pageScaffold,
+      ),
     );
   }
 }

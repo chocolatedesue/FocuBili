@@ -8,6 +8,7 @@ import '../../models/video_preview.dart';
 import '../../models/watch_history_entry.dart';
 import '../../services/bilibili_service.dart';
 import '../../services/watch_history_service.dart';
+import '../common/watch_history_format.dart';
 
 /// 展示只保存在当前设备上的观看记录，不读取或同步 B 站账号历史。
 class WatchHistoryPage extends StatefulWidget {
@@ -256,25 +257,12 @@ class _WatchHistoryPageState extends State<WatchHistoryPage> {
 
   /// 将本机记录时间格式化为便于扫读的年月日和小时分钟文本。
   String _formatWatchedAt(DateTime watchedAt) {
-    final String year = watchedAt.year.toString().padLeft(4, '0');
-    final String month = watchedAt.month.toString().padLeft(2, '0');
-    final String day = watchedAt.day.toString().padLeft(2, '0');
-    final String hour = watchedAt.hour.toString().padLeft(2, '0');
-    final String minute = watchedAt.minute.toString().padLeft(2, '0');
-    return '$year-$month-$day $hour:$minute';
+    return WatchHistoryFormat.formatWatchedAt(watchedAt);
   }
 
   /// 将已观看的位置转换为简短时分秒文本，供缩略图右下角展示。
   String _formatWatchedPosition(Duration position) {
-    final int totalSeconds = position.inSeconds.clamp(0, 24 * 60 * 60).toInt();
-    final int hours = totalSeconds ~/ 3600;
-    final int minutes = (totalSeconds % 3600) ~/ 60;
-    final int seconds = totalSeconds % 60;
-    final String twoDigitsMinutes = minutes.toString().padLeft(2, '0');
-    final String twoDigitsSeconds = seconds.toString().padLeft(2, '0');
-    return hours > 0
-        ? '$hours:$twoDigitsMinutes:$twoDigitsSeconds'
-        : '$minutes:$twoDigitsSeconds';
+    return WatchHistoryFormat.formatWatchedPosition(position);
   }
 
   /// 构建缓存缩略图、网络失败占位图和右下角的已观看时长角标。
