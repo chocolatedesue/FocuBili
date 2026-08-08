@@ -9,6 +9,7 @@ import '../../models/watch_history_entry.dart';
 import '../../services/bilibili_service.dart';
 import '../../services/watch_history_service.dart';
 import '../common/watch_history_card.dart';
+import '../common/watch_history_launcher.dart';
 
 /// 首页宽屏「最近观看」网格：只读本机历史，不接推荐流。
 class HomeWatchHistorySection extends StatefulWidget {
@@ -144,27 +145,17 @@ class _HomeWatchHistorySectionState extends State<HomeWatchHistorySection> {
       return;
     }
     setState(() => _openingBvid = entry.bvid);
-    try {
-      final VideoPreview video = await _bilibiliService.lookupVideo(entry.bvid);
-      if (!mounted) {
-        return;
-      }
-      setState(() => _openingBvid = null);
-      await Navigator.of(context).pushNamed(AppRoutes.player, arguments: video);
-      if (mounted) {
-        unawaited(_reload());
-      }
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() => _openingBvid = null);
-      final String message = error is BilibiliLookupException
-          ? error.message
-          : '无法打开该视频，请稍后重试。';
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(message)));
+    final bool opened = await WatchHistoryLauncher.open(
+      context,
+      entry,
+      service: _bilibiliService,
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() => _openingBvid = null);
+    if (opened) {
+      unawaited(_reload());
     }
   }
 

@@ -12,6 +12,7 @@ import '../../features/profile/personalization_settings_page.dart';
 import '../../features/profile/watch_history_page.dart';
 import '../../features/shell/main_shell.dart';
 import '../../models/video_preview.dart';
+import 'player_route_args.dart';
 
 /// 保存应用所有路由名称，减少页面之间手写字符串造成的错误。
 abstract final class AppRoutes {
@@ -40,13 +41,10 @@ abstract final class AppRouter {
           settings: settings,
         );
       case AppRoutes.player:
-        final Object? arguments = settings.arguments;
-        final VideoPreview video = arguments is VideoPreview
-            ? arguments
-            : VideoPreview.placeholder();
         return MaterialPageRoute<void>(
-          // 播放页构建函数把选中的视频信息交给原生播放器占位页。
-          builder: (BuildContext context) => PlayerPage(video: video),
+          // 播放页支持完整 [PlayerRouteArgs]、旧版 [VideoPreview] 与可选 Map。
+          builder: (BuildContext context) =>
+              _buildPlayerPage(settings.arguments),
           settings: settings,
         );
       case AppRoutes.login:
@@ -112,5 +110,44 @@ abstract final class AppRouter {
           settings: settings,
         );
     }
+  }
+
+  /// Builds [PlayerPage] from named-route arguments with backward-compatible shapes.
+  static PlayerPage _buildPlayerPage(Object? arguments) {
+    if (arguments is PlayerRouteArgs) {
+      return PlayerPage(
+        video: arguments.video,
+        initialPartCid: arguments.initialPartCid,
+        initialPosition: arguments.initialPosition,
+        initialPositionSource: arguments.initialPositionSource,
+      );
+    }
+    if (arguments is VideoPreview) {
+      return PlayerPage(video: arguments);
+    }
+    if (arguments is Map) {
+      final Object? videoArg = arguments['video'];
+      final VideoPreview video = videoArg is VideoPreview
+          ? videoArg
+          : VideoPreview.placeholder();
+      final Object? cidArg = arguments['initialPartCid'];
+      final int? initialPartCid = cidArg is int ? cidArg : null;
+      final Object? positionArg = arguments['initialPosition'];
+      final Duration? initialPosition = positionArg is Duration
+          ? positionArg
+          : null;
+      final Object? sourceArg = arguments['initialPositionSource'];
+      final PlayerInitialPositionSource source =
+          sourceArg is PlayerInitialPositionSource
+          ? sourceArg
+          : PlayerInitialPositionSource.note;
+      return PlayerPage(
+        video: video,
+        initialPartCid: initialPartCid,
+        initialPosition: initialPosition,
+        initialPositionSource: source,
+      );
+    }
+    return PlayerPage(video: VideoPreview.placeholder());
   }
 }
