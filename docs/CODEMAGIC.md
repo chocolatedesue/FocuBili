@@ -2,7 +2,13 @@
 
 参考 [FMP](https://github.com/chocolatedesue/FMP) 的 `codemagic.yaml` 写法，为 FocuBili 提供多端云构建。
 
-**终端用户安装包**：请优先从 [GitHub Release v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1) 下载 Android APK / Windows zip / macOS zip。桌面使用说明见 [`DESKTOP.md`](DESKTOP.md)；播放后端说明见 [`PLAYBACK_BACKEND.md`](PLAYBACK_BACKEND.md)。
+**终端用户安装包**：请优先从 [GitHub Release v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1) 下载。
+
+- Android：**三个 ABI APK**（推荐 [`arm64-v8a`](https://github.com/chocolatedesue/FocuBili/releases/download/v1.2.1/FocuBili-v1.2.1-android-arm64-v8a.apk)），无 fat 包。
+- Windows / macOS：对应 zip。
+
+桌面说明见 [`DESKTOP.md`](DESKTOP.md)；播放后端见 [`PLAYBACK_BACKEND.md`](PLAYBACK_BACKEND.md)。  
+脚本：[`scripts/download_release.sh`](../scripts/download_release.sh)、[`scripts/fetch_codemagic_android_split.sh`](../scripts/fetch_codemagic_android_split.sh)、[`scripts/publish_github_release.sh`](../scripts/publish_github_release.sh)。
 
 ## 工作流一览
 
@@ -58,7 +64,15 @@ build/app/outputs/flutter-apk/app-x86_64-release.apk
 
 另可附对应 `.sha256`。Artifacts 通配示例：`codemagic-artifacts/*-android-*.apk`。
 
-历史单文件名 `FocuBili-android-bN.apk`（fat）**不再**作为 Android 主发布形态；GitHub Release 后续将列出 **多个 per-ABI APK**。
+历史单文件名 `FocuBili-android-bN.apk`（fat）**不再**作为 Android 主发布形态。
+
+**GitHub Release v1.2.1** 已挂载：
+
+- `FocuBili-v1.2.1-android-arm64-v8a.apk`（**推荐真机**）
+- `FocuBili-v1.2.1-android-armeabi-v7a.apk`
+- `FocuBili-v1.2.1-android-x86_64.apk`
+
+以及 Windows / macOS zip 与 `SHA256SUMS.txt`。本地从 Release 下载可用 [`scripts/download_release.sh`](../scripts/download_release.sh)；上传新版本可用 [`scripts/publish_github_release.sh`](../scripts/publish_github_release.sh)（需已准备好产物目录）。
 
 ### 用户应装哪个 ABI？
 

@@ -32,8 +32,8 @@ FocuBili 希望保留“主动找到一支视频并认真看完”这件事本�
 
 ## v1.2.1 更新内容
 
-- **多端发布**：提供 Android APK（**按 ABI 拆分**，无 fat 包）、Windows zip、macOS zip（实验性桌面；mac 包未公证）。最新构建见 [GitHub Release v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1)；后续 Release 将列出多个 per-ABI APK（多数手机选 **arm64-v8a**）。
-- **media_kit 播放（实验性共享栈）**：Windows / macOS / Linux **与 Android 默认**均使用 media_kit（libmpv），以便专注跟播计时；Android 上 Media3 `NativePlaybackService` 仍保留供注入/回退。**iOS 未迁 media_kit。** 说明见 [`docs/PLAYBACK_BACKEND.md`](docs/PLAYBACK_BACKEND.md)、计划 [`docs/PLAN_ANDROID_MEDIA_KIT.md`](docs/PLAN_ANDROID_MEDIA_KIT.md)。
+- **多端发布**：Android **per-ABI APK**（arm64 / armeabi-v7a / x86_64，**无 fat**）、Windows zip、macOS zip（未公证）。下载 [GitHub Release v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1)（**多数手机装 arm64-v8a**）。
+- **media_kit 播放（实验性共享栈）**：Android / Windows / macOS / Linux **默认** media_kit（libmpv）；Media3 `NativePlaybackService` 仍保留可注入回退。**iOS 未迁 media_kit。** 见 [`docs/PLAYBACK_BACKEND.md`](docs/PLAYBACK_BACKEND.md)、[`docs/PLAN_ANDROID_MEDIA_KIT.md`](docs/PLAN_ANDROID_MEDIA_KIT.md)。
 - **宽屏首页观看历史**：较宽布局下首页展示本机观看历史网格，便于桌面续看。
 - **历史续播**：从首页或观看记录进入时，尽量恢复上次分 P 与播放位置。
 - **专注计时与缓冲**：正常视频缓冲不再误暂停专注累计。
@@ -226,15 +226,19 @@ APK SHA-256：`4998C8EB9EF7F69C336F2A0BA50EF1772D6F154899506B4D2C10FFF5F91CFE95`
 
 ## 下载
 
-最新多端构建请从 **[chocolatedesue/FocuBili Releases](https://github.com/chocolatedesue/FocuBili/releases)** 获取，推荐标签 **[v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1)**（Android / Windows zip / macOS zip）。校验和见 [docs/RELEASE_NOTES_v1.2.1.md](docs/RELEASE_NOTES_v1.2.1.md)。
+最新多端构建：**[v1.2.1 Release](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1)** · 校验和 [RELEASE_NOTES_v1.2.1](docs/RELEASE_NOTES_v1.2.1.md) / 附件 `SHA256SUMS.txt`。
 
-**Android 安装说明（ABI）：**
+| 平台 | 资产 | 备注 |
+|------|------|------|
+| Android **arm64-v8a** | [FocuBili-v1.2.1-android-arm64-v8a.apk](https://github.com/chocolatedesue/FocuBili/releases/download/v1.2.1/FocuBili-v1.2.1-android-arm64-v8a.apk) | **多数真机** |
+| Android armeabi-v7a | [FocuBili-v1.2.1-android-armeabi-v7a.apk](https://github.com/chocolatedesue/FocuBili/releases/download/v1.2.1/FocuBili-v1.2.1-android-armeabi-v7a.apk) | 32 位 ARM |
+| Android x86_64 | [FocuBili-v1.2.1-android-x86_64.apk](https://github.com/chocolatedesue/FocuBili/releases/download/v1.2.1/FocuBili-v1.2.1-android-x86_64.apk) | 模拟器 / x86 |
+| Windows x64 | [FocuBili-v1.2.1-windows-x64.zip](https://github.com/chocolatedesue/FocuBili/releases/download/v1.2.1/FocuBili-v1.2.1-windows-x64.zip) | 解压运行 |
+| macOS | [FocuBili-v1.2.1-macos.zip](https://github.com/chocolatedesue/FocuBili/releases/download/v1.2.1/FocuBili-v1.2.1-macos.zip) | 未公证 |
 
-- 发版形态转为 **按 CPU ABI 拆分的多个 APK**（`armeabi-v7a` / `arm64-v8a` / `x86_64`），**不提供** fat / universal 单包作为主发布物（体积与 media_kit 原生库有关）。
-- **绝大多数手机 / 平板请下载 `arm64-v8a`**；较老 32 位 ARM 用 `armeabi-v7a`；模拟器或 x86 设备用 `x86_64`。
-- 历史 Release 可能仍是单个 `*-android*.apk`；新构建与 Codemagic 产物命名见 [`docs/CODEMAGIC.md`](docs/CODEMAGIC.md)。
+**不提供** fat / universal 单 APK（media_kit 原生库体积）。云构建命名见 [`docs/CODEMAGIC.md`](docs/CODEMAGIC.md)。拉取 Release 可用 [`scripts/download_release.sh`](scripts/download_release.sh)。
 
-较早 Android 版本仍可能出现在 [L1Xu4n/FocuBili Releases](https://github.com/L1Xu4n/FocuBili/releases)（上游 / 历史存档，非最新下载源）。
+较早 Android 版本可能仍在 [L1Xu4n/FocuBili Releases](https://github.com/L1Xu4n/FocuBili/releases)（历史存档）。
 
 ## 本地构建
 

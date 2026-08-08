@@ -19,7 +19,13 @@
 | [RELEASE_NOTES_v1.1.0.md](./RELEASE_NOTES_v1.1.0.md) | v1.1.0 发行说明 |
 | [RELEASE_NOTES_v1.0.1.md](./RELEASE_NOTES_v1.0.1.md) | v1.0.1 发行说明 |
 
-最新安装包：[GitHub Release v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1)
+最新安装包：[GitHub Release v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1)（Android 为 per-ABI 多 APK，推荐 arm64-v8a）
+
+脚本（仓库 `scripts/`）：
+
+- `download_release.sh` — 下载 Release 资产并可选校验 SHA256  
+- `fetch_codemagic_android_split.sh` — 从 Codemagic build 拉 split APK 并重命名  
+- `publish_github_release.sh` — 将本地产物目录上传到 GitHub Release
 
 ## 播放与后端
 
