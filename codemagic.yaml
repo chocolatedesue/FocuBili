@@ -1,13 +1,19 @@
 # FocuBili Codemagic cloud builds
-# Workflows:
-#   - android-apk   (mac free / linux paid) → release APK
-#   - macos-build   (mac)                  → unsigned .app zip
-#   - windows-build (windows_x2 paid)      → Release folder zip
 #
-# Playback: Android = Media3 (primary mobile). Desktop (Win/Linux/macOS) =
-# media_kit / libmpv (experimental). See docs/PLAYBACK_BACKEND.md.
-# Windows builds may also run via GitHub Actions when Codemagic Windows
-# instances are unavailable. Cookie paste on desktop shares prefs with playback.
+# Workflows:
+#   - android-apk   (mac_mini_m2, free-plan friendly) → release APK
+#   - macos-build   (mac_mini_m2, free-plan friendly) → unsigned .app zip
+#   - windows-build (windows_x2, often paid / may be unavailable on free) → Release zip
+#
+# Multi-backend playback (not compile-only shells):
+#   - Android: Media3 + MethodChannel (primary mobile)
+#   - Desktop Win/Linux/macOS: media_kit / libmpv (experimental real playback)
+# See docs/PLAYBACK_BACKEND.md and docs/DESKTOP.md.
+#
+# Free plan reality: Android + macOS on mac instances. Windows is often built
+# via GitHub Actions instead when Codemagic windows_x2 is unavailable/paid.
+# Desktop Cookie paste shares prefs key with playback (focubili_bili_cookie_header).
+# End-user artifacts: GitHub Release (e.g. v1.2.1).
 
 workflows:
   android-apk:

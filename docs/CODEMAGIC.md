@@ -1,28 +1,38 @@
 # FocuBili Codemagic 云编译指南
 
-参考 [FMP](https://github.com/chocolatedesue/FMP) 的 `codemagic.yaml` 写法，为 FocuBili 提供 Android / macOS / Windows 三端云构建。
+参考 [FMP](https://github.com/chocolatedesue/FMP) 的 `codemagic.yaml` 写法，为 FocuBili 提供多端云构建。
+
+**终端用户安装包**：请优先从 [GitHub Release v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1) 下载 Android APK / Windows zip / macOS zip。桌面使用说明见 [`DESKTOP.md`](DESKTOP.md)；播放后端说明见 [`PLAYBACK_BACKEND.md`](PLAYBACK_BACKEND.md)。
 
 ## 工作流一览
 
-| Workflow ID | 名称 | 机器 | 产物 |
-|-------------|------|------|------|
-| `android-apk` | FocuBili Android APK | `mac_mini_m2`（免费计划） | `FocuBili-android-bN.apk` |
-| `macos-build` | FocuBili macOS Build | `mac_mini_m2`（默认） | `FocuBili-macos-bN.zip`（内含 `.app`） |
-| `windows-build` | FocuBili Windows Build | `windows_x2`（需付费计划） | `FocuBili-windows-bN.zip` |
+| Workflow ID | 名称 | 机器 | 产物 | 计划说明 |
+|-------------|------|------|------|----------|
+| `android-apk` | FocuBili Android APK | `mac_mini_m2` | `FocuBili-android-bN.apk` | **免费计划可用**（mac 上 `flutter build apk`） |
+| `macos-build` | FocuBili macOS Build | `mac_mini_m2` | `FocuBili-macos-bN.zip`（内含 `.app`） | **免费计划可用**；产物通常为**未签名**包 |
+| `windows-build` | FocuBili Windows Build | `windows_x2` | `FocuBili-windows-bN.zip` | **常需付费** `windows_x2`；免费计划易报 instance unavailable |
 
-> **实例说明**：免费计划仅提供 `mac_mini_m2`。Android APK 可在 mac 实例上构建（`flutter build apk` 跨平台）。`windows_x2` / `linux_x2` 需要付费计划，否则对应 workflow 会因 "instance type not available" 失败。
+> **实例说明**：Codemagic **免费计划**主要提供 `mac_mini_m2`，因此 **Android + macOS** 是默认可跑的云构建路径。`windows_x2` / `linux_x2` 往往不在免费额度内。Windows 日常发版更常见走 **GitHub Actions**（自备 Windows runner / `flutter build windows`），与 CM `windows-build` 二选一或并存。
 
 配置文件：仓库根目录 [`codemagic.yaml`](../codemagic.yaml)。
+
+### v1.2.1 构建来源（参考）
+
+| 平台 | 典型来源 |
+|------|----------|
+| Android | Codemagic `android-apk` |
+| macOS | Codemagic `macos-build` |
+| Windows | GitHub Actions（CM `windows-build` 在付费实例可用时亦可） |
 
 ## 在 Codemagic 接入
 
 1. 打开 [codemagic.io](https://codemagic.io)，用 GitHub 登录。
-2. **Add application** → 选择 `chocolatedesue/FocuBili`（或你的 fork）。
+2. **Add application** → 选择仓库（如 `chocolatedesue/FocuBili` 或你的 fork）。
 3. 选择 **Flutter App**，扫描到根目录的 `codemagic.yaml` 后保存。
-4. 在应用设置里确认三个 workflow 都可见。
-5. 手动 **Start new build**，分别选 `android-apk` / `macos-build` / `windows-build` 试跑。
+4. 在应用设置里确认 workflow 可见。
+5. 手动 **Start new build**：免费计划优先试 `android-apk` / `macos-build`；`windows-build` 仅在实例可用时再跑。
 
-成功后在 build 页面 **Artifacts** 下载 APK / zip。通知邮件默认发到 `chocolatedesue@outlook.com`（可在 yaml 里改）。
+成功后在 build 页面 **Artifacts** 下载 APK / zip。通知邮件可在 yaml 的 `publishing.email` 中修改。
 
 ## Android 签名（可选）
 
@@ -65,22 +75,30 @@ base64 -w0 android/release.keystore   # 贴到 KEYSTORE_BASE64
 
 ## 桌面端能力说明（重要）
 
-播放后端选择见 [`PLAYBACK_BACKEND.md`](PLAYBACK_BACKEND.md)：
+桌面端是 **media_kit（libmpv）实验性真实播放**，**不是**「仅编译通过的空壳」。播放后端选择见 [`PLAYBACK_BACKEND.md`](PLAYBACK_BACKEND.md)；终端用法见 [`DESKTOP.md`](DESKTOP.md)。
 
 | 平台 | 播放 | 说明 |
 |------|------|------|
 | **Android** | Media3 + MethodChannel（主路径） | 纹理、边播边缓存、系统闹钟等能力最完整 |
-| **Windows / Linux / macOS** | **media_kit（libmpv）实验性** | 桌面默认后端；依赖 `media_kit_libs_video` / 系统 mpv |
-| 登录 Cookie | 桌面 prefs 与播放共用；Android WebView 通道 | 部分流仍需有效 Cookie；Windows 官方 WebView 登录受限 |
+| **Windows / Linux / macOS** | **media_kit（libmpv）实验性** | 桌面默认后端；依赖 `media_kit_libs_video` / 系统 mpv；可播流、跟专注计时、历史续播 |
+| 登录 Cookie | 桌面 prefs 与播放**共用**同一键 | `kFocubiliBiliCookieHeaderPrefsKey` / `focubili_bili_cookie_header`；推荐 Cookie 粘贴 |
+| 登录 UI | Android WebView 通道为主 | macOS 可尝试 WebView，但与 prefs 播放会话可能不同步；**Windows 不支持**官方 WebView 登录，请用 Cookie |
 
 补充：
 
-- 边播边缓存、系统闹钟提醒等 **Android 专用能力在桌面端尚未移植**；
+- 边播边缓存、系统精确闹钟 / 勿扰等 **Android 专用能力在桌面端尚未 1:1 移植**；
 - 登录页 `webview_flutter` 官方支持 Android / iOS / **macOS**，**不支持 Windows**（桌面优先 Cookie 粘贴）；
-- macOS 已开启 sandbox 下的 `network.client`，便于 HTTPS 请求；
-- **Windows 构建**：Codemagic `windows-build`（需 `windows_x2` 付费实例）之外，也可在 **GitHub Actions** 等自备 Windows runner 上 `flutter build windows`。
+- macOS 已开启 sandbox 下的 `network.client`，便于 HTTPS 请求；构建产物通常 **未 Apple 签名/公证**，Gatekeeper 可能拦截；
+- **Windows 构建**：Codemagic `windows-build`（常需 `windows_x2` 付费实例）之外，发版更常见在 **GitHub Actions** 上 `flutter build windows`。
 
 桌面播放为实验性能力，接口与编解码行为仍可能变化；请以真机/本机验收为准。
+
+## Cookie / 登录与云构建的关系
+
+- 云构建**不**内置任何用户 Cookie；登录与播放会话完全在本机完成。
+- 桌面把粘贴的 Cookie 写入 SharedPreferences，键名与播放 `CookieHeaderProvider` 一致（见上表），避免「已登录但播不了」。
+- 部分清晰度 / 受权限控制的流仍需要有效 Cookie；公开试看是否可用取决于 CDN。
+- 详情见 [`PLAYBACK_BACKEND.md`](PLAYBACK_BACKEND.md) 与 [`DESKTOP.md`](DESKTOP.md)。
 
 ## 通过 CLI 触发构建
 
@@ -90,14 +108,19 @@ base64 -w0 android/release.keystore   # 贴到 KEYSTORE_BASE64
 export CM_TOKEN="<你的 API token>"
 APP_ID="<app id，Codemagic 应用设置里可查>"
 
-# 触发 Android APK（mac 实例）
+# 触发 Android APK（mac 实例，免费计划友好）
 curl -H "x-auth-token: $CM_TOKEN" -H "Content-Type: application/json" \
   --data '{"appId":"'$APP_ID'","workflowId":"android-apk","branch":"master"}' \
   -X POST https://api.codemagic.io/builds
 
-# 触发 macOS 构建
+# 触发 macOS 构建（mac 实例，免费计划友好）
 curl -H "x-auth-token: $CM_TOKEN" -H "Content-Type: application/json" \
   --data '{"appId":"'$APP_ID'","workflowId":"macos-build","branch":"master"}' \
+  -X POST https://api.codemagic.io/builds
+
+# 触发 Windows 构建（通常需要 windows_x2 付费实例；否则改用 GitHub Actions）
+curl -H "x-auth-token: $CM_TOKEN" -H "Content-Type: application/json" \
+  --data '{"appId":"'$APP_ID'","workflowId":"windows-build","branch":"master"}' \
   -X POST https://api.codemagic.io/builds
 
 # 查询构建状态（返回 build.status / build.message）
@@ -114,7 +137,7 @@ curl -H "x-auth-token: $CM_TOKEN" https://api.codemagic.io/builds/<build_id>
 - `build-name` = `1.2.$PROJECT_BUILD_NUMBER`
 - `build-number` = `$PROJECT_BUILD_NUMBER`
 
-`PROJECT_BUILD_NUMBER` 由 Codemagic 每次构建递增。若要与 Git tag / `pubspec.yaml` 的 `1.2.0+11` 严格对齐，可在 yaml 里改成读 tag 或固定版本。
+`PROJECT_BUILD_NUMBER` 由 Codemagic 每次构建递增。若要与 Git tag / `pubspec.yaml` 或 GitHub Release **v1.2.1** 严格对齐，可在 yaml 里改成读 tag 或固定版本。
 
 ## 本地对照命令
 
@@ -136,7 +159,8 @@ flutter build windows --release
 
 | 项目 | FMP | FocuBili |
 |------|-----|----------|
-| Codemagic | 仅 macOS | Android + macOS + Windows |
+| Codemagic | 仅 macOS | **免费计划主打 Android + macOS**；Windows 常 GHA / 付费 `windows_x2` |
 | 代码生成 | Isar / slang | 无（不需要 build_runner） |
-| 主平台 | 跨端音乐 | Android Media3 为主；桌面 media_kit 实验性播放 |
-| 签名 | GitHub Release secrets | Codemagic 可选 keystore |
+| 主平台 | 跨端音乐 | Android Media3 为主；**桌面 media_kit 实验性真实播放**（非空壳） |
+| 签名 | GitHub Release secrets | Android 可选 keystore；macOS 产物通常未签名 |
+| 终端分发 | — | [GitHub Release v1.2.1](https://github.com/chocolatedesue/FocuBili/releases/tag/v1.2.1) |
