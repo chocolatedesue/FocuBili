@@ -6,9 +6,11 @@
 
 | Workflow ID | 名称 | 机器 | 产物 |
 |-------------|------|------|------|
-| `android-apk` | FocuBili Android APK | `linux_x2` | `FocuBili-android-bN.apk` |
-| `macos-build` | FocuBili macOS Build | macOS（默认） | `FocuBili-macos-bN.zip`（内含 `.app`） |
-| `windows-build` | FocuBili Windows Build | `windows_x2` | `FocuBili-windows-bN.zip` |
+| `android-apk` | FocuBili Android APK | `mac_mini_m2`（免费计划） | `FocuBili-android-bN.apk` |
+| `macos-build` | FocuBili macOS Build | `mac_mini_m2`（默认） | `FocuBili-macos-bN.zip`（内含 `.app`） |
+| `windows-build` | FocuBili Windows Build | `windows_x2`（需付费计划） | `FocuBili-windows-bN.zip` |
+
+> **实例说明**：免费计划仅提供 `mac_mini_m2`。Android APK 可在 mac 实例上构建（`flutter build apk` 跨平台）。`windows_x2` / `linux_x2` 需要付费计划，否则对应 workflow 会因 "instance type not available" 失败。
 
 配置文件：仓库根目录 [`codemagic.yaml`](../codemagic.yaml)。
 
@@ -71,6 +73,31 @@ FocuBili 核心播放链路依赖 Android 原生 **Media3 + MethodChannel**（`N
 - macOS 已开启 sandbox 下的 `network.client`，便于 HTTPS 请求。
 
 把「能编过、能下发」当作第一阶段；完整桌面播放需后续单独做桌面播放后端。
+
+## 通过 CLI 触发构建
+
+借助 Codemagic REST API 可在命令行直接触发 workflow（无需网页）：
+
+```bash
+export CM_TOKEN="<你的 API token>"
+APP_ID="<app id，Codemagic 应用设置里可查>"
+
+# 触发 Android APK（mac 实例）
+curl -H "x-auth-token: $CM_TOKEN" -H "Content-Type: application/json" \
+  --data '{"appId":"'$APP_ID'","workflowId":"android-apk","branch":"master"}' \
+  -X POST https://api.codemagic.io/builds
+
+# 触发 macOS 构建
+curl -H "x-auth-token: $CM_TOKEN" -H "Content-Type: application/json" \
+  --data '{"appId":"'$APP_ID'","workflowId":"macos-build","branch":"master"}' \
+  -X POST https://api.codemagic.io/builds
+
+# 查询构建状态（返回 build.status / build.message）
+curl -H "x-auth-token: $CM_TOKEN" https://api.codemagic.io/builds/<build_id>
+```
+
+- 触发构建时使用的 `workflowId` 是 `codemagic.yaml` 里定义的名称（`android-apk` / `macos-build` / `windows-build`）。
+- token 在 [codemagic.io](https://codemagic.io) → 个人账户 → **API tokens** 生成。
 
 ## 版本号
 
