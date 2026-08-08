@@ -82,6 +82,30 @@ android {
                     : signingConfigs.debug
         }
     }
+
+    // 按 ABI 拆分 APK，不产出 universal fat 包（减小体积，配合 media_kit 原生库）。
+    // 与 `flutter build apk --split-per-abi` 对齐。
+    splits {
+        abi {
+            enable true
+            reset()
+            include "armeabi-v7a", "arm64-v8a", "x86_64"
+            universalApk false
+        }
+    }
+}
+
+// 按 ABI 覆盖 versionCode，便于多 APK 同时上架（base * 10 + abiCode）。
+ext.abiCodes = ["armeabi-v7a": 1, "arm64-v8a": 2, "x86_64": 3]
+android.applicationVariants.configureEach { variant ->
+    variant.outputs.each { output ->
+        def abiName = output.getFilter(com.android.build.OutputFile.ABI)
+        if (abiName != null) {
+            def base = variant.versionCode
+            def abiCode = project.ext.abiCodes.get(abiName, 0)
+            output.versionCodeOverride = base * 10 + abiCode
+        }
+    }
 }
 
 flutter {
