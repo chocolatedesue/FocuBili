@@ -12,7 +12,9 @@ workflows:
   android-apk:
     name: FocuBili Android APK
     max_build_duration: 60
-    instance_type: linux_x2
+    # Free plan only offers mac_mini_m2; it can build Android APKs.
+    # Use linux_x2 / windows_x2 on a paid plan for faster Linux-based builds.
+    instance_type: mac_mini_m2
     environment:
       flutter: stable
       java: 17
@@ -142,6 +144,7 @@ workflows:
   windows-build:
     name: FocuBili Windows Build
     max_build_duration: 120
+    # windows_x2 requires a paid plan. On free plan this workflow will fail.
     instance_type: windows_x2
     environment:
       flutter: stable
