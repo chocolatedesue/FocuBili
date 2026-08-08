@@ -2,11 +2,10 @@ name: Windows Build
 
 on:
   push:
-    tags:
-      - 'v*'
-  push:
     branches:
       - master
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 permissions:
