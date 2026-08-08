@@ -1,0 +1,73 @@
+name: Windows Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.44.9'
+
+jobs:
+  build-windows:
+    name: Build Windows Release
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+          cache-key: flutter-${{ env.FLUTTER_VERSION }}-${{ runner.os }}
+
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Flutter dependencies
+        run: flutter pub get
+
+      - name: Flutter analyze
+        run: flutter analyze
+
+      - name: Flutter test
+        run: flutter test
+
+      - name: Build Windows (Release)
+        run: flutter build windows --release
+
+      - name: Create release directory
+        shell: pwsh
+        run: |
+          $ver = (Select-String -Path pubspec.yaml -Pattern '^version:\s*(.+)$').Matches[0].Groups[1].Value.Trim()
+          $tag = if ($env:GITHUB_REF -match '^refs/tags/(.+)$') { $Matches[1] } else { "master" }
+          $releaseName = "FocuBili-$tag-windows"
+          New-Item -ItemType Directory -Force -Path "release\$releaseName"
+          Copy-Item -Recurse -Force build\windows\x64\runner\Release\* "release\$releaseName\"
+
+          # 产物留档：tag 构建保留版本号，分支构建保留 latest。
+          $zipPath = "FocuBili-$tag-windows.zip"
+          Compress-Archive -Path "release\$releaseName" -DestinationPath $zipPath
+          Copy-Item $zipPath "FocuBili-windows-latest.zip"
+          Write-Host "Packaged: $zipPath"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-build
+          path: FocuBili-*-windows.zip
+          retention-days: 30
