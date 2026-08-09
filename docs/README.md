@@ -25,7 +25,11 @@
 
 - `download_release.sh` — 下载 Release 资产并可选校验 SHA256  
 - `fetch_codemagic_android_split.sh` — 从 Codemagic build 拉 split APK 并重命名  
-- `publish_github_release.sh` — 将本地产物目录上传到 GitHub Release
+- `publish_github_release.sh` — 将本地产物目录上传到 GitHub Release  
+
+**Agent 构建技能（项目级）：** [`.grok/skills/focubili-build/`](../.grok/skills/focubili-build/)  
+在 Grok / 兼容 agent 中可用 `/focubili-build`，或匹配「云构建 / Codemagic / split APK / 发版」时自动加载。  
+同目录 `scripts/trigger_cloud_builds.sh` 可一键触发 Android/macOS（CM）+ Windows（GHA）。
 
 ## 播放与后端
 

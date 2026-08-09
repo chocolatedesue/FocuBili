@@ -10,6 +10,13 @@
 桌面说明见 [`DESKTOP.md`](DESKTOP.md)；播放后端见 [`PLAYBACK_BACKEND.md`](PLAYBACK_BACKEND.md)。  
 脚本：[`scripts/download_release.sh`](../scripts/download_release.sh)、[`scripts/fetch_codemagic_android_split.sh`](../scripts/fetch_codemagic_android_split.sh)、[`scripts/publish_github_release.sh`](../scripts/publish_github_release.sh)。
 
+项目级 Agent 技能：[`.grok/skills/focubili-build/SKILL.md`](../.grok/skills/focubili-build/SKILL.md)（`/focubili-build`）。  
+一键触发云构建：
+
+```bash
+.grok/skills/focubili-build/scripts/trigger_cloud_builds.sh android macos windows
+```
+
 ## 工作流一览
 
 | Workflow ID | 名称 | 机器 | 产物 | 计划说明 |
